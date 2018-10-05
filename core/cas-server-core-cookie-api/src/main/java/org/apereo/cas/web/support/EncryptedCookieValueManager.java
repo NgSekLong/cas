@@ -1,9 +1,11 @@
 package org.apereo.cas.web.support;
 
+import org.apereo.cas.CipherExecutor;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.commons.lang3.StringUtils;
-import org.apereo.cas.CipherExecutor;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -18,21 +20,22 @@ import java.io.Serializable;
 @Slf4j
 @RequiredArgsConstructor
 public class EncryptedCookieValueManager implements CookieValueManager {
+    private static final long serialVersionUID = 6362136147071376270L;
     /**
      * The cipher exec that is responsible for encryption and signing of the cookie.
      */
-    private final CipherExecutor<Serializable, Serializable> cipherExecutor;
+    private final transient CipherExecutor<Serializable, Serializable> cipherExecutor;
 
     @Override
     public final String buildCookieValue(final String givenCookieValue, final HttpServletRequest request) {
-        final String res = buildCompoundCookieValue(givenCookieValue, request);
+        val res = buildCompoundCookieValue(givenCookieValue, request);
         LOGGER.debug("Encoding cookie value [{}]", res);
         return cipherExecutor.encode(res, new Object[]{}).toString();
     }
 
     @Override
     public final String obtainCookieValue(final Cookie cookie, final HttpServletRequest request) {
-        final String cookieValue = cipherExecutor.decode(cookie.getValue(), new Object[]{}).toString();
+        val cookieValue = cipherExecutor.decode(cookie.getValue(), new Object[]{}).toString();
         LOGGER.debug("Decoded cookie value is [{}]", cookieValue);
         if (StringUtils.isBlank(cookieValue)) {
             LOGGER.debug("Retrieved decoded cookie value is blank. Failed to decode cookie [{}]", cookie.getName());

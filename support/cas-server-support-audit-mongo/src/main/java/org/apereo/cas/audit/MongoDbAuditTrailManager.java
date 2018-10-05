@@ -1,19 +1,22 @@
 package org.apereo.cas.audit;
 
-import lombok.extern.slf4j.Slf4j;
+import org.apereo.cas.audit.spi.AbstractAuditTrailManager;
 import org.apereo.cas.util.DateTimeUtils;
+
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apereo.inspektr.audit.AuditActionContext;
-import org.apereo.inspektr.audit.AuditTrailManager;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+
 import java.time.LocalDate;
-import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import lombok.Setter;
 
 /**
  * This is {@link MongoDbAuditTrailManager}.
@@ -23,38 +26,29 @@ import lombok.Setter;
  */
 @Slf4j
 @Setter
-public class MongoDbAuditTrailManager implements AuditTrailManager {
+@RequiredArgsConstructor
+public class MongoDbAuditTrailManager extends AbstractAuditTrailManager {
 
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
-
-    private boolean asynchronous = true;
-
+    private final transient MongoTemplate mongoTemplate;
     private final String collectionName;
 
-    private final transient MongoTemplate mongoTemplate;
-
-    public MongoDbAuditTrailManager(final MongoTemplate mongoTemplate, final String collectionName) {
+    public MongoDbAuditTrailManager(final MongoTemplate mongoTemplate, final String collectionName, final boolean asynchronous) {
+        super(asynchronous);
         this.mongoTemplate = mongoTemplate;
         this.collectionName = collectionName;
     }
 
     @Override
-    public void record(final AuditActionContext audit) {
-        if (this.asynchronous) {
-            this.executorService.execute(() -> saveAuditRecord(audit));
-        } else {
-            saveAuditRecord(audit);
-        }
-    }
-
-    private void saveAuditRecord(final AuditActionContext audit) {
+    protected void saveAuditRecord(final AuditActionContext audit) {
         this.mongoTemplate.save(audit, this.collectionName);
     }
 
     @Override
-    public Set<AuditActionContext> getAuditRecordsSince(final LocalDate localDate) {
-        final Date dt = DateTimeUtils.dateOf(localDate);
-        final Query query = new Query().addCriteria(Criteria.where("whenActionWasPerformed").lte(dt));
+    public Set<? extends AuditActionContext> getAuditRecordsSince(final LocalDate localDate) {
+        val dt = DateTimeUtils.dateOf(localDate);
+        LOGGER.debug("Retrieving audit records since [{}] from [{}]", dt, this.collectionName);
+        val query = new Query().addCriteria(Criteria.where("whenActionWasPerformed").gte(dt));
         return new LinkedHashSet<>(this.mongoTemplate.find(query, AuditActionContext.class, this.collectionName));
     }
 }

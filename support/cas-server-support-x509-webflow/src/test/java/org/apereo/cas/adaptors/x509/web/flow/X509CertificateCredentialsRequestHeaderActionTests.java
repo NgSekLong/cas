@@ -1,10 +1,12 @@
 package org.apereo.cas.adaptors.x509.web.flow;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apereo.cas.adaptors.x509.authentication.principal.AbstractX509CertificateTests;
 import org.apereo.cas.adaptors.x509.config.X509AuthenticationConfiguration;
+import org.apereo.cas.web.extractcert.X509CertificateExtractorConfiguration;
 import org.apereo.cas.web.flow.CasWebflowConstants;
 import org.apereo.cas.web.flow.config.X509AuthenticationWebflowConfiguration;
+
+import lombok.val;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -27,8 +29,7 @@ import static org.junit.Assert.*;
  */
 @TestPropertySource(locations = {"classpath:/x509.properties"},
     properties = "cas.authn.x509.extractCert=true")
-@Import(value = {X509AuthenticationWebflowConfiguration.class, X509AuthenticationConfiguration.class})
-@Slf4j
+@Import(value = {X509AuthenticationWebflowConfiguration.class, X509AuthenticationConfiguration.class, X509CertificateExtractorConfiguration.class})
 public class X509CertificateCredentialsRequestHeaderActionTests extends AbstractX509CertificateTests {
 
     @Autowired
@@ -37,8 +38,8 @@ public class X509CertificateCredentialsRequestHeaderActionTests extends Abstract
 
     @Test
     public void verifyCredentialsResultsInAuthnFailure() throws Exception {
-        final MockRequestContext context = new MockRequestContext();
-        final MockHttpServletRequest request = new MockHttpServletRequest();
+        val context = new MockRequestContext();
+        val request = new MockHttpServletRequest();
         request.addHeader("ssl_client_cert", VALID_CERTIFICATE.getContent());
         context.setExternalContext(new ServletExternalContext(new MockServletContext(), request, new MockHttpServletResponse()));
         assertEquals(CasWebflowConstants.TRANSITION_ID_AUTHENTICATION_FAILURE, this.action.execute(context).getId());

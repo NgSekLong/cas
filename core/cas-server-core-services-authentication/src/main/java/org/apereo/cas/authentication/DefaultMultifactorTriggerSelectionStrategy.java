@@ -1,14 +1,15 @@
 package org.apereo.cas.authentication;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apereo.cas.authentication.principal.Principal;
 import org.apereo.cas.configuration.model.support.mfa.MultifactorAuthenticationProperties;
 import org.apereo.cas.services.MultifactorAuthenticationProvider;
 import org.apereo.cas.services.RegisteredService;
 import org.apereo.cas.services.RegisteredServiceMultifactorPolicy;
 import org.apereo.cas.util.CollectionUtils;
+
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import lombok.RequiredArgsConstructor;
+import lombok.val;
 import org.springframework.util.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
@@ -17,7 +18,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -30,7 +30,6 @@ import static org.springframework.util.StringUtils.commaDelimitedListToSet;
  * @author Daniel Frett
  * @since 5.0.0
  */
-@Slf4j
 @RequiredArgsConstructor
 public class DefaultMultifactorTriggerSelectionStrategy implements MultifactorTriggerSelectionStrategy {
     private final MultifactorAuthenticationProperties mfaProperties;
@@ -43,12 +42,13 @@ public class DefaultMultifactorTriggerSelectionStrategy implements MultifactorTr
         if (providers == null || providers.isEmpty()) {
             return Optional.empty();
         }
-        final Set<String> validProviderIds = providers.stream()
+        val validProviderIds = providers.stream()
             .map(MultifactorAuthenticationProvider::getId)
             .collect(Collectors.toSet());
-        final Principal principal = authentication != null ? authentication.getPrincipal() : null;
+        val principal = authentication != null ? authentication.getPrincipal() : null;
 
-        Optional<String> provider = resolveRequestParameterTrigger(request, validProviderIds);
+
+        var provider = resolveRequestParameterTrigger(request, validProviderIds);
 
         if (!provider.isPresent()) {
             provider = resolveRegisteredServiceTrigger(service, principal, validProviderIds);
@@ -80,9 +80,9 @@ public class DefaultMultifactorTriggerSelectionStrategy implements MultifactorTr
             return Optional.empty();
         }
 
-        final RegisteredServiceMultifactorPolicy policy = service.getMultifactorPolicy();
-        final String attrName = policy.getPrincipalAttributeNameTrigger();
-        final String attrValue = policy.getPrincipalAttributeValueToMatch();
+        val policy = service.getMultifactorPolicy();
+        val attrName = policy.getPrincipalAttributeNameTrigger();
+        val attrValue = policy.getPrincipalAttributeValueToMatch();
 
         // Principal attribute name and/or value is not defined, enforce policy
         if (!StringUtils.hasText(attrName) || !StringUtils.hasText(attrValue)) {
@@ -178,7 +178,7 @@ public class DefaultMultifactorTriggerSelectionStrategy implements MultifactorTr
         }
 
         // check to see if any of the specified attributes match the value pattern
-        final Predicate<String> valuePredicate = Pattern.compile(value).asPredicate();
+        val valuePredicate = Pattern.compile(value).asPredicate();
         return commaDelimitedListToSet(names).stream()
             .map(attributes::get)
             .filter(Objects::nonNull)

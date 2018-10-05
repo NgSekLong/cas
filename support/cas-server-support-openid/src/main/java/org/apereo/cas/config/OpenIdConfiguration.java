@@ -1,6 +1,5 @@
 package org.apereo.cas.config;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apereo.cas.CentralAuthenticationService;
 import org.apereo.cas.authentication.AuthenticationContextValidator;
 import org.apereo.cas.authentication.AuthenticationSystemSupport;
@@ -28,8 +27,12 @@ import org.apereo.cas.web.DelegatingController;
 import org.apereo.cas.web.flow.resolver.CasDelegatingWebflowEventResolver;
 import org.apereo.cas.web.flow.resolver.CasWebflowEventResolver;
 import org.apereo.cas.web.support.ArgumentExtractor;
+
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.openid4java.server.InMemoryServerAssociationStore;
 import org.openid4java.server.ServerManager;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -52,7 +55,6 @@ import java.util.Properties;
 @EnableConfigurationProperties(CasConfigurationProperties.class)
 @Slf4j
 public class OpenIdConfiguration {
-
 
     @Autowired
     @Qualifier("adaptiveAuthenticationPolicy")
@@ -92,7 +94,7 @@ public class OpenIdConfiguration {
 
     @Autowired
     @Qualifier("centralAuthenticationService")
-    private CentralAuthenticationService centralAuthenticationService;
+    private ObjectProvider<CentralAuthenticationService> centralAuthenticationService;
 
     @Autowired
     @Qualifier("authenticationContextValidator")
@@ -100,7 +102,7 @@ public class OpenIdConfiguration {
 
     @Autowired
     @Qualifier("defaultAuthenticationSystemSupport")
-    private AuthenticationSystemSupport authenticationSystemSupport;
+    private ObjectProvider<AuthenticationSystemSupport> authenticationSystemSupport;
 
     @Autowired
     @Qualifier("cas20WithoutProxyProtocolValidationSpecification")
@@ -112,11 +114,11 @@ public class OpenIdConfiguration {
 
     @Autowired
     @Qualifier("servicesManager")
-    private ServicesManager servicesManager;
+    private ObjectProvider<ServicesManager> servicesManager;
 
     @Autowired
     @Qualifier("defaultTicketRegistrySupport")
-    private TicketRegistrySupport ticketRegistrySupport;
+    private ObjectProvider<TicketRegistrySupport> ticketRegistrySupport;
 
     @Autowired
     @Qualifier("serviceValidationAuthorizers")
@@ -130,7 +132,7 @@ public class OpenIdConfiguration {
     @RefreshScope
     @Bean
     public ServerManager serverManager() {
-        final ServerManager manager = new ServerManager();
+        val manager = new ServerManager();
         manager.setOPEndpointUrl(casProperties.getServer().getLoginUrl());
         manager.setEnforceRpId(casProperties.getAuthn().getOpenid().isEnforceRpId());
         manager.setSharedAssociations(new InMemoryServerAssociationStore());
@@ -141,8 +143,8 @@ public class OpenIdConfiguration {
     @ConditionalOnMissingBean(name = "openIdServiceResponseBuilder")
     @Bean
     public ResponseBuilder openIdServiceResponseBuilder() {
-        final String openIdPrefixUrl = casProperties.getServer().getPrefix().concat("/openid");
-        return new OpenIdServiceResponseBuilder(openIdPrefixUrl, serverManager(), centralAuthenticationService, servicesManager);
+        val openIdPrefixUrl = casProperties.getServer().getPrefix().concat("/openid");
+        return new OpenIdServiceResponseBuilder(openIdPrefixUrl, serverManager(), centralAuthenticationService.getIfAvailable(), servicesManager.getIfAvailable());
     }
 
 
@@ -162,7 +164,7 @@ public class OpenIdConfiguration {
     @Bean
     public Action openIdSingleSignOnAction() {
         return new OpenIdSingleSignOnAction(initialAuthenticationAttemptWebflowEventResolver, serviceTicketRequestWebflowEventResolver,
-            adaptiveAuthenticationPolicy, defaultOpenIdUserNameExtractor(), ticketRegistrySupport);
+            adaptiveAuthenticationPolicy, defaultOpenIdUserNameExtractor(), ticketRegistrySupport.getIfAvailable());
     }
 
     @Bean
@@ -173,21 +175,28 @@ public class OpenIdConfiguration {
     @Autowired
     @Bean
     public OpenIdPostUrlHandlerMapping openIdPostUrlHandlerMapping(@Qualifier("argumentExtractor") final ArgumentExtractor argumentExtractor) {
-        final OpenIdValidateController c = new OpenIdValidateController(cas20WithoutProxyProtocolValidationSpecification,
-            authenticationSystemSupport, servicesManager,
-            centralAuthenticationService, proxy20Handler,
-            argumentExtractor, multifactorTriggerSelectionStrategy,
-            authenticationContextValidator, cas3ServiceJsonView,
-            casOpenIdServiceSuccessView, casOpenIdServiceFailureView,
+        val c = new OpenIdValidateController(cas20WithoutProxyProtocolValidationSpecification,
+            authenticationSystemSupport.getIfAvailable(),
+            servicesManager.getIfAvailable(),
+            centralAuthenticationService.getIfAvailable(),
+            proxy20Handler,
+            argumentExtractor,
+            multifactorTriggerSelectionStrategy,
+            authenticationContextValidator,
+            cas3ServiceJsonView,
+            casOpenIdServiceSuccessView,
+            casOpenIdServiceFailureView,
             casProperties.getAuthn().getMfa().getAuthenticationContextAttribute(),
-            serverManager(), validationAuthorizers, casProperties.getSso().isRenewAuthnEnabled());
+            serverManager(),
+            validationAuthorizers,
+            casProperties.getSso().isRenewAuthnEnabled());
 
-        final DelegatingController controller = new DelegatingController();
+        val controller = new DelegatingController();
         controller.setDelegates(CollectionUtils.wrapList(smartOpenIdAssociationController(), c));
 
-        final OpenIdPostUrlHandlerMapping m = new OpenIdPostUrlHandlerMapping();
+        val m = new OpenIdPostUrlHandlerMapping();
         m.setOrder(1);
-        final Properties mappings = new Properties();
+        val mappings = new Properties();
         mappings.put("/login", controller);
         m.setMappings(mappings);
         return m;

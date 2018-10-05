@@ -1,8 +1,5 @@
 package org.apereo.cas.support.saml.web.idp.profile.sso;
 
-import lombok.extern.slf4j.Slf4j;
-import net.shibboleth.utilities.java.support.xml.ParserPool;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apereo.cas.authentication.AuthenticationSystemSupport;
 import org.apereo.cas.authentication.principal.Service;
 import org.apereo.cas.authentication.principal.ServiceFactory;
@@ -17,6 +14,8 @@ import org.apereo.cas.support.saml.web.idp.profile.builders.SamlProfileObjectBui
 import org.apereo.cas.support.saml.web.idp.profile.builders.enc.SamlIdPObjectSigner;
 import org.apereo.cas.support.saml.web.idp.profile.builders.enc.SamlObjectSignatureValidator;
 import org.apereo.cas.support.saml.web.idp.profile.sso.request.SSOSamlHttpRequestExtractor;
+
+import org.apache.commons.lang3.tuple.Pair;
 import org.opensaml.messaging.context.MessageContext;
 import org.opensaml.messaging.decoder.servlet.BaseHttpServletRequestXMLMessageDecoder;
 import org.opensaml.saml.common.SignableSAMLObject;
@@ -37,12 +36,10 @@ import javax.servlet.http.HttpServletResponse;
  * @author Misagh Moayyed
  * @since 5.0.0
  */
-@Slf4j
 public class SSOSamlPostProfileHandlerController extends AbstractSamlProfileHandlerController {
     private final SSOSamlHttpRequestExtractor samlHttpRequestExtractor;
 
     public SSOSamlPostProfileHandlerController(final SamlIdPObjectSigner samlObjectSigner,
-                                               final ParserPool parserPool,
                                                final AuthenticationSystemSupport authenticationSystemSupport,
                                                final ServicesManager servicesManager,
                                                final ServiceFactory<WebApplicationService> webApplicationServiceFactory,
@@ -54,7 +51,6 @@ public class SSOSamlPostProfileHandlerController extends AbstractSamlProfileHand
                                                final SSOSamlHttpRequestExtractor samlHttpRequestExtractor,
                                                final Service callbackService) {
         super(samlObjectSigner,
-            parserPool,
             authenticationSystemSupport,
             servicesManager,
             webApplicationServiceFactory,

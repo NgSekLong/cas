@@ -1,12 +1,15 @@
 package org.apereo.cas.config.support.authentication;
 
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.apereo.cas.authentication.AuthenticationEventExecutionPlanConfigurer;
 import org.apereo.cas.authentication.AuthenticationHandler;
 import org.apereo.cas.authentication.principal.PrincipalResolver;
 import org.apereo.cas.configuration.CasConfigurationProperties;
 import org.apereo.cas.util.AsciiArtUtils;
+
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -32,7 +35,7 @@ public class AcceptUsersAuthenticationEventExecutionPlanConfiguration {
 
     @Autowired
     @Qualifier("personDirectoryPrincipalResolver")
-    private PrincipalResolver personDirectoryPrincipalResolver;
+    private ObjectProvider<PrincipalResolver> personDirectoryPrincipalResolver;
 
     @Autowired
     @Qualifier("acceptUsersAuthenticationHandler")
@@ -43,13 +46,13 @@ public class AcceptUsersAuthenticationEventExecutionPlanConfiguration {
     public AuthenticationEventExecutionPlanConfigurer acceptUsersAuthenticationEventExecutionPlanConfigurer() {
         return plan -> {
             if (StringUtils.isNotBlank(this.casProperties.getAuthn().getAccept().getUsers())) {
-                final String header =
-                        "\nCAS is configured to accept a static list of credentials for authentication. "
-                                + "While this is generally useful for demo purposes, it is STRONGLY recommended "
-                                + "that you DISABLE this authentication method (by setting 'cas.authn.accept.users' "
-                                + "to a blank value) and switch to a mode that is more suitable for production.";
+                val header =
+                    "\nCAS is configured to accept a static list of credentials for authentication. "
+                        + "While this is generally useful for demo purposes, it is STRONGLY recommended "
+                        + "that you DISABLE this authentication method (by setting 'cas.authn.accept.users' "
+                        + "to a blank value) and switch to a mode that is more suitable for production.";
                 AsciiArtUtils.printAsciiArtWarning(LOGGER, "STOP!", header);
-                plan.registerAuthenticationHandlerWithPrincipalResolver(acceptUsersAuthenticationHandler, personDirectoryPrincipalResolver);
+                plan.registerAuthenticationHandlerWithPrincipalResolver(acceptUsersAuthenticationHandler, personDirectoryPrincipalResolver.getIfAvailable());
             }
         };
     }

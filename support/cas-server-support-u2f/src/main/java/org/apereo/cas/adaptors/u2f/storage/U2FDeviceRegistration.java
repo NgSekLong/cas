@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.Column;
@@ -25,8 +24,7 @@ import java.time.LocalDate;
  */
 @Entity
 @Table(name = "U2FDeviceRegistration")
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY)
-@Slf4j
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
 @Getter
 @Setter
 @AllArgsConstructor

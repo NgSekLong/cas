@@ -1,6 +1,7 @@
 ---
 layout: default
 title: CAS - SMS Messaging
+category: Notifications
 ---
 
 # SMS Messaging
@@ -21,7 +22,7 @@ To learn more, [visit this site](https://www.twilio.com/).
 </dependency>
 ```
 
-To see the relevant list of CAS properties, please [review this guide](Configuration-Properties.html#twilio).
+To see the relevant list of CAS properties, please [review this guide](../configuration/Configuration-Properties.html#twilio).
 
 ## TextMagic
 
@@ -35,7 +36,7 @@ To learn more, [visit this site](https://www.textmagic.com/).
 </dependency>
 ```
 
-To see the relevant list of CAS properties, please [review this guide](Configuration-Properties.html#textmagic).
+To see the relevant list of CAS properties, please [review this guide](../configuration/Configuration-Properties.html#textmagic).
 
 ## Clickatell
 
@@ -49,7 +50,7 @@ To learn more, [visit this site](http://www.clickatell.com/).
 </dependency>
 ```
 
-To see the relevant list of CAS properties, please [review this guide](Configuration-Properties.html#clickatell).
+To see the relevant list of CAS properties, please [review this guide](../configuration/Configuration-Properties.html#clickatell).
 
 ## Amazon SNS
 
@@ -63,4 +64,18 @@ To learn more, [visit this site](https://docs.aws.amazon.com/sns).
 </dependency>
 ```
 
-To see the relevant list of CAS properties, please [review this guide](Configuration-Properties.html#amazon-sns).
+To see the relevant list of CAS properties, please [review this guide](../configuration/Configuration-Properties.html#amazon-sns).
+
+## Nexmo
+
+To learn more, [visit this site](https://dashboard.nexmo.com/).
+
+```xml
+<dependency>
+    <groupId>org.apereo.cas</groupId>
+    <artifactId>cas-server-support-sms-nexmo</artifactId>
+    <version>${cas.version}</version>
+</dependency>
+```
+
+To see the relevant list of CAS properties, please [review this guide](../configuration/Configuration-Properties.html#nexmo).

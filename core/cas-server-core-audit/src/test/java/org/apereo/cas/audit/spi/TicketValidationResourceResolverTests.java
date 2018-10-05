@@ -1,7 +1,10 @@
 package org.apereo.cas.audit.spi;
 
+import org.apereo.cas.audit.spi.resource.TicketValidationResourceResolver;
 import org.apereo.cas.authentication.CoreAuthenticationTestUtils;
 import org.apereo.cas.validation.Assertion;
+
+import lombok.val;
 import org.aspectj.lang.JoinPoint;
 import org.junit.Test;
 
@@ -19,9 +22,9 @@ public class TicketValidationResourceResolverTests {
 
     @Test
     public void verifyActionPassed() {
-        final JoinPoint jp = mock(JoinPoint.class);
+        val jp = mock(JoinPoint.class);
         when(jp.getArgs()).thenReturn(new Object[]{});
-        final Assertion assertion = mock(Assertion.class);
+        val assertion = mock(Assertion.class);
         when(assertion.getPrimaryAuthentication()).thenReturn(CoreAuthenticationTestUtils.getAuthentication());
         assertTrue(r.resolveFrom(jp, assertion).length > 0);
     }

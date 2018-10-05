@@ -1,17 +1,17 @@
 package org.apereo.cas.impl.account;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.http.HttpResponse;
 import org.apereo.cas.api.PasswordlessUserAccount;
 import org.apereo.cas.api.PasswordlessUserAccountStore;
 import org.apereo.cas.configuration.model.support.passwordless.PasswordlessAuthenticationProperties;
 import org.apereo.cas.util.HttpUtils;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -33,14 +33,14 @@ public class RestfulPasswordlessUserAccountStore implements PasswordlessUserAcco
     @Override
     public Optional<PasswordlessUserAccount> findUser(final String username) {
         try {
-            final Map<String, Object> parameters = new HashMap<>();
+            val parameters = new HashMap<String, Object>();
             parameters.put("username", username);
 
-            final HttpResponse response = HttpUtils.execute(restProperties.getUrl(), restProperties.getMethod(),
+            val response = HttpUtils.execute(restProperties.getUrl(), restProperties.getMethod(),
                 restProperties.getBasicAuthUsername(), restProperties.getBasicAuthPassword(),
                 parameters, new HashMap<>());
             if (response != null && response.getEntity() != null) {
-                final PasswordlessUserAccount account = MAPPER.readValue(response.getEntity().getContent(), PasswordlessUserAccount.class);
+                val account = MAPPER.readValue(response.getEntity().getContent(), PasswordlessUserAccount.class);
                 return Optional.ofNullable(account);
             }
         } catch (final Exception e) {

@@ -1,6 +1,5 @@
 package org.apereo.cas.config;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apereo.cas.authentication.DefaultPrincipalElectionStrategy;
 import org.apereo.cas.authentication.PrincipalElectionStrategy;
 import org.apereo.cas.authentication.principal.DefaultPrincipalAttributesRepository;
@@ -13,10 +12,12 @@ import org.apereo.cas.authentication.principal.resolvers.ChainingPrincipalResolv
 import org.apereo.cas.authentication.principal.resolvers.EchoingPrincipalResolver;
 import org.apereo.cas.authentication.principal.resolvers.PersonDirectoryPrincipalResolver;
 import org.apereo.cas.configuration.CasConfigurationProperties;
-import org.apereo.cas.configuration.model.core.authentication.PersonDirectoryPrincipalResolverProperties;
-import org.apereo.cas.configuration.model.core.authentication.PrincipalAttributesProperties;
 import org.apereo.cas.util.CollectionUtils;
+
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apereo.services.persondir.IPersonAttributeDao;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -43,11 +44,11 @@ public class CasCoreAuthenticationPrincipalConfiguration {
 
     @Autowired
     @Qualifier("attributeRepositories")
-    private List<IPersonAttributeDao> attributeRepositories;
+    private ObjectProvider<List<IPersonAttributeDao>> attributeRepositories;
 
     @Autowired
     @Qualifier("attributeRepository")
-    private IPersonAttributeDao attributeRepository;
+    private ObjectProvider<IPersonAttributeDao> attributeRepository;
 
     @ConditionalOnMissingBean(name = "principalElectionStrategy")
     @Bean
@@ -67,20 +68,21 @@ public class CasCoreAuthenticationPrincipalConfiguration {
     @Bean
     @ConditionalOnMissingBean(name = "personDirectoryPrincipalResolver")
     public PrincipalResolver personDirectoryPrincipalResolver() {
-        final PersonDirectoryPrincipalResolverProperties personDirectory = casProperties.getPersonDirectory();
-        final PersonDirectoryPrincipalResolver bean = new PersonDirectoryPrincipalResolver(
-            attributeRepository,
+        val personDirectory = casProperties.getPersonDirectory();
+        val bean = new PersonDirectoryPrincipalResolver(
+            attributeRepository.getIfAvailable(),
             principalFactory(),
             personDirectory.isReturnNull(),
             personDirectory.getPrincipalAttribute()
         );
+        bean.setUseCurrentPrincipalId(personDirectory.isUseExistingPrincipalId());
 
-        final ChainingPrincipalResolver resolver = new ChainingPrincipalResolver();
-        if (!attributeRepositories.isEmpty()) {
+        val resolver = new ChainingPrincipalResolver();
+        if (!attributeRepositories.getIfAvailable().isEmpty()) {
             LOGGER.debug("Attribute repository sources are defined and available for the principal resolution chain. "
                 + "The principal resolver will use a combination of attributes collected from attribute repository sources "
                 + "and whatever may be collected during the authentication phase where results are eventually merged.");
-            resolver.setChain(CollectionUtils.wrapList(bean, new EchoingPrincipalResolver()));
+            resolver.setChain(CollectionUtils.wrapList(new EchoingPrincipalResolver(), bean));
         } else {
             LOGGER.debug("Attribute repository sources are not available for principal resolution so principal resolver will echo "
                 + "back the principal resolved during authentication directly.");
@@ -94,9 +96,10 @@ public class CasCoreAuthenticationPrincipalConfiguration {
     @RefreshScope
     @ConditionalOnMissingBean(name = "globalPrincipalAttributeRepository")
     public PrincipalAttributesRepository globalPrincipalAttributeRepository() {
-        final PrincipalAttributesProperties props = casProperties.getAuthn().getAttributeRepository();
-        final long cacheTime = props.getExpirationTime();
-        if (cacheTime < 0) {
+        val props = casProperties.getAuthn().getAttributeRepository();
+        val cacheTime = props.getExpirationTime();
+        if (cacheTime <= 0) {
+            LOGGER.warn("Caching for the global principal attribute repository is disabled");
             return new DefaultPrincipalAttributesRepository();
         }
         return new CachingPrincipalAttributesRepository(props.getExpirationTimeUnit().toUpperCase(), cacheTime);

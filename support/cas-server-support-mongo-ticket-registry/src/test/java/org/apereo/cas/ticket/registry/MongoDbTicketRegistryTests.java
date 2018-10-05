@@ -1,9 +1,6 @@
 package org.apereo.cas.ticket.registry;
 
-import java.util.Arrays;
-import java.util.Collection;
-
-import lombok.extern.slf4j.Slf4j;
+import org.apereo.cas.category.MongoDbCategory;
 import org.apereo.cas.config.CasCoreAuthenticationConfiguration;
 import org.apereo.cas.config.CasCoreAuthenticationHandlersConfiguration;
 import org.apereo.cas.config.CasCoreAuthenticationMetadataConfiguration;
@@ -15,16 +12,18 @@ import org.apereo.cas.config.CasCoreConfiguration;
 import org.apereo.cas.config.CasCoreHttpConfiguration;
 import org.apereo.cas.config.CasCoreServicesAuthenticationConfiguration;
 import org.apereo.cas.config.CasCoreServicesConfiguration;
+import org.apereo.cas.config.CasCoreTicketCatalogConfiguration;
 import org.apereo.cas.config.CasCoreTicketsConfiguration;
 import org.apereo.cas.config.CasCoreUtilConfiguration;
 import org.apereo.cas.config.CasCoreWebConfiguration;
 import org.apereo.cas.config.CasPersonDirectoryConfiguration;
-import org.apereo.cas.config.CasCoreTicketCatalogConfiguration;
 import org.apereo.cas.config.MongoDbTicketRegistryConfiguration;
 import org.apereo.cas.config.MongoDbTicketRegistryTicketCatalogConfiguration;
 import org.apereo.cas.config.support.CasWebApplicationServiceFactoryConfiguration;
 import org.apereo.cas.logout.config.CasCoreLogoutConfiguration;
+
 import org.junit.Before;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +35,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
 
+import java.util.Arrays;
+import java.util.Collection;
+
 /**
  * This is {@link MongoDbTicketRegistryTests}.
  *
@@ -43,6 +45,7 @@ import org.springframework.test.context.TestPropertySource;
  * @since 5.1.0
  */
 @RunWith(Parameterized.class)
+@Category(MongoDbCategory.class)
 @SpringBootTest(classes = {
     RefreshAutoConfiguration.class,
     CasCoreUtilConfiguration.class,
@@ -67,9 +70,17 @@ import org.springframework.test.context.TestPropertySource;
     CasCoreWebConfiguration.class,
     CasWebApplicationServiceFactoryConfiguration.class})
 @EnableScheduling
-@TestPropertySource(locations = {"classpath:/mongoregistry.properties"})
+@TestPropertySource(properties = {
+    "cas.ticket.registry.mongo.databaseName=ticket-registry",
+    "cas.ticket.registry.mongo.authenticationDatabaseName=admin",
+    "cas.ticket.registry.mongo.host=localhost",
+    "cas.ticket.registry.mongo.port=27017",
+    "cas.ticket.registry.mongo.dropCollection=true",
+    "cas.ticket.registry.mongo.userId=root",
+    "cas.ticket.registry.mongo.password=secret"
+})
+
 @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
-@Slf4j
 public class MongoDbTicketRegistryTests extends BaseSpringRunnableTicketRegistryTests {
 
     @Autowired
@@ -94,5 +105,4 @@ public class MongoDbTicketRegistryTests extends BaseSpringRunnableTicketRegistry
     public TicketRegistry getNewTicketRegistry() {
         return this.ticketRegistry;
     }
-
 }

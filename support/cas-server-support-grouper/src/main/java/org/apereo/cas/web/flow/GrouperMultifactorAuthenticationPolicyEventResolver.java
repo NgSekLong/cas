@@ -1,34 +1,28 @@
 package org.apereo.cas.web.flow;
 
-import edu.internet2.middleware.grouperClient.ws.beans.WsGetGroupsResult;
-import edu.internet2.middleware.grouperClientExt.org.apache.commons.lang3.StringUtils;
-import lombok.extern.slf4j.Slf4j;
 import org.apereo.cas.CentralAuthenticationService;
-import org.apereo.cas.authentication.Authentication;
 import org.apereo.cas.authentication.AuthenticationException;
 import org.apereo.cas.authentication.AuthenticationServiceSelectionPlan;
 import org.apereo.cas.authentication.AuthenticationSystemSupport;
 import org.apereo.cas.authentication.MultifactorAuthenticationUtils;
-import org.apereo.cas.authentication.principal.Principal;
 import org.apereo.cas.configuration.CasConfigurationProperties;
 import org.apereo.cas.grouper.GrouperFacade;
 import org.apereo.cas.grouper.GrouperGroupField;
-import org.apereo.cas.services.MultifactorAuthenticationProvider;
 import org.apereo.cas.services.MultifactorAuthenticationProviderSelector;
-import org.apereo.cas.services.RegisteredService;
 import org.apereo.cas.services.ServicesManager;
 import org.apereo.cas.ticket.registry.TicketRegistrySupport;
 import org.apereo.cas.util.CollectionUtils;
 import org.apereo.cas.web.flow.authentication.BaseMultifactorAuthenticationProviderEventResolver;
 import org.apereo.cas.web.support.WebUtils;
+
+import edu.internet2.middleware.grouperClientExt.org.apache.commons.lang3.StringUtils;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apereo.inspektr.audit.annotation.Audit;
 import org.springframework.web.util.CookieGenerator;
 import org.springframework.webflow.execution.Event;
 import org.springframework.webflow.execution.RequestContext;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -62,8 +56,8 @@ public class GrouperMultifactorAuthenticationPolicyEventResolver extends BaseMul
 
     @Override
     public Set<Event> resolveInternal(final RequestContext context) {
-        final RegisteredService service = resolveRegisteredServiceInRequestContext(context);
-        final Authentication authentication = WebUtils.getAuthentication(context);
+        val service = resolveRegisteredServiceInRequestContext(context);
+        val authentication = WebUtils.getAuthentication(context);
 
         if (StringUtils.isBlank(grouperField)) {
             LOGGER.debug("No group field is defined to process for Grouper multifactor trigger");
@@ -74,36 +68,36 @@ public class GrouperMultifactorAuthenticationPolicyEventResolver extends BaseMul
             return null;
         }
 
-        final Principal principal = authentication.getPrincipal();
-        final Collection<WsGetGroupsResult> results = grouperFacade.getGroupsForSubjectId(principal.getId());
+        val principal = authentication.getPrincipal();
+        val results = grouperFacade.getGroupsForSubjectId(principal.getId());
         if (results.isEmpty()) {
             LOGGER.debug("No groups could be found for [{}] to resolve events for MFA", principal);
             return null;
         }
 
-        final Map<String, MultifactorAuthenticationProvider> providerMap =
+        val providerMap =
             MultifactorAuthenticationUtils.getAvailableMultifactorAuthenticationProviders(this.applicationContext);
         if (providerMap == null || providerMap.isEmpty()) {
             LOGGER.error("No multifactor authentication providers are available in the application context");
             throw new AuthenticationException();
         }
 
-        final GrouperGroupField groupField = GrouperGroupField.valueOf(grouperField);
+        val groupField = GrouperGroupField.valueOf(grouperField);
 
-        final Set<String> values = results.stream()
+        val values = results.stream()
             .map(wsGetGroupsResult -> Stream.of(wsGetGroupsResult.getWsGroups()))
             .flatMap(Function.identity())
             .map(g -> GrouperFacade.getGrouperGroupAttribute(groupField, g))
             .collect(Collectors.toSet());
 
-        final Optional<MultifactorAuthenticationProvider> providerFound = resolveProvider(providerMap, values);
+        val providerFound = resolveProvider(providerMap, values);
 
         if (providerFound.isPresent()) {
-            final MultifactorAuthenticationProvider provider = providerFound.get();
+            val provider = providerFound.get();
             if (provider.isAvailable(service)) {
                 LOGGER.debug("Attempting to build event based on the authentication provider [{}] and service [{}]",
                     provider, service.getName());
-                final Event event = validateEventIdForMatchingTransitionInContext(provider.getId(), context,
+                val event = validateEventIdForMatchingTransitionInContext(provider.getId(), context,
                     buildEventAttributeMap(authentication.getPrincipal(), service, provider));
                 return CollectionUtils.wrapSet(event);
             }

@@ -1,9 +1,11 @@
 package org.apereo.cas.authentication;
 
-import lombok.experimental.UtilityClass;
-import lombok.extern.slf4j.Slf4j;
 import org.apereo.cas.configuration.model.support.mfa.MultifactorAuthenticationProviderBypassProperties;
 import org.apereo.cas.services.MultifactorAuthenticationProvider;
+
+import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.springframework.context.ApplicationContext;
 
 import java.util.Collection;
@@ -29,18 +31,14 @@ public class MultifactorAuthenticationUtils {
     public static MultifactorAuthenticationProviderBypass newMultifactorAuthenticationProviderBypass(
         final MultifactorAuthenticationProviderBypassProperties props) {
 
-        final MultifactorAuthenticationProviderBypass bypass;
-        switch (props.getType()) {
-            case GROOVY:
-                bypass = new GroovyMultifactorAuthenticationProviderBypass(props);
-                break;
-            case REST:
-                bypass = new RestMultifactorAuthenticationProviderBypass(props);
-                break;
-            case DEFAULT:
-            default:
-                bypass = new DefaultMultifactorAuthenticationProviderBypass(props);
-                break;
+        val bypass = new ChainingMultifactorAuthenticationBypassProvider();
+        bypass.addBypass(new DefaultMultifactorAuthenticationProviderBypass(props));
+
+        if (props.getType() == MultifactorAuthenticationProviderBypassProperties.MultifactorProviderBypassTypes.GROOVY) {
+            bypass.addBypass(new GroovyMultifactorAuthenticationProviderBypass(props));
+        }
+        if (props.getType() == MultifactorAuthenticationProviderBypassProperties.MultifactorProviderBypassTypes.REST) {
+            bypass.addBypass(new RestMultifactorAuthenticationProviderBypass(props));
         }
         return bypass;
     }
@@ -72,8 +70,8 @@ public class MultifactorAuthenticationUtils {
      */
     public static Collection<MultifactorAuthenticationProvider> getMultifactorAuthenticationProvidersByIds(final Collection<String> ids,
                                                                                                            final ApplicationContext applicationContext) {
-        final Map<String, MultifactorAuthenticationProvider> available = getAvailableMultifactorAuthenticationProviders(applicationContext);
-        final Collection<MultifactorAuthenticationProvider> values = available.values();
+        val available = getAvailableMultifactorAuthenticationProviders(applicationContext);
+        val values = available.values();
         return values.stream()
             .filter(p -> ids.contains(p.getId()))
             .collect(Collectors.toSet());

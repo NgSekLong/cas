@@ -1,16 +1,17 @@
 package org.apereo.cas.services;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apereo.cas.services.replication.RegisteredServiceReplicationStrategy;
 import org.apereo.cas.services.resource.AbstractResourceBasedServiceRegistry;
 import org.apereo.cas.services.resource.RegisteredServiceResourceNamingStrategy;
 import org.apereo.cas.services.util.CasAddonsRegisteredServicesJsonSerializer;
 import org.apereo.cas.services.util.DefaultRegisteredServiceJsonSerializer;
 import org.apereo.cas.util.CollectionUtils;
+
+import lombok.Getter;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.io.Resource;
+
 import java.nio.file.Path;
-import lombok.Getter;
 
 /**
  * Implementation of {@code ServiceRegistry} that reads services definition from JSON
@@ -24,7 +25,6 @@ import lombok.Getter;
  * @author Misagh Moayyed
  * @since 4.1.0
  */
-@Slf4j
 @Getter
 public class JsonServiceRegistry extends AbstractResourceBasedServiceRegistry {
 
@@ -68,11 +68,11 @@ public class JsonServiceRegistry extends AbstractResourceBasedServiceRegistry {
                                final RegisteredServiceResourceNamingStrategy resourceNamingStrategy) throws Exception {
         super(configDirectory, CollectionUtils.wrapList(new CasAddonsRegisteredServicesJsonSerializer(),
             new DefaultRegisteredServiceJsonSerializer()), enableWatcher, eventPublisher,
-                registeredServiceReplicationStrategy, resourceNamingStrategy);
+            registeredServiceReplicationStrategy, resourceNamingStrategy);
     }
 
     @Override
-    protected String getExtension() {
-        return FILE_EXTENSION;
+    protected String[] getExtensions() {
+        return new String[]{FILE_EXTENSION};
     }
 }

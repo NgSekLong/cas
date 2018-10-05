@@ -2,6 +2,8 @@ package org.apereo.cas.logging.web;
 
 import org.apereo.cas.ticket.registry.TicketRegistrySupport;
 import org.apereo.cas.web.support.CookieRetrievingCookieGenerator;
+
+import lombok.val;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -37,7 +39,7 @@ public class ThreadContextMDCServletFilterTests {
 
     @Test
     public void verifyFilter() {
-        final MockHttpServletRequest request = new MockHttpServletRequest();
+        val request = new MockHttpServletRequest();
         request.setRequestURI("/cas/login");
         request.setRemoteAddr("1.2.3.4");
         request.setRemoteUser("casuser");
@@ -53,8 +55,8 @@ public class ThreadContextMDCServletFilterTests {
         request.setAttribute("a1", "v1");
         request.addHeader("h1", "v1");
 
-        final MockHttpServletResponse response = new MockHttpServletResponse();
-        final MockFilterChain filterChain = new MockFilterChain();
+        val response = new MockHttpServletResponse();
+        val filterChain = new MockFilterChain();
 
         try {
             filter.doFilter(request, response, filterChain);

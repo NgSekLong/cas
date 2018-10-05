@@ -1,9 +1,11 @@
 package org.apereo.cas.config;
 
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.apereo.cas.configuration.model.support.jpa.AbstractJpaProperties;
 import org.apereo.cas.configuration.support.JpaBeans;
+
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.cloud.bootstrap.config.PropertySourceLocator;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -11,9 +13,6 @@ import org.springframework.core.env.PropertiesPropertySource;
 import org.springframework.core.env.PropertySource;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import javax.sql.DataSource;
-import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -29,14 +28,14 @@ public class JdbcCloudConfigBootstrapConfiguration implements PropertySourceLoca
 
     @Override
     public PropertySource<?> locate(final Environment environment) {
-        final Properties props = new Properties();
+        val props = new Properties();
 
         try {
-            final JdbcCloudConnection connection = new JdbcCloudConnection(environment);
-            final DataSource dataSource = JpaBeans.newDataSource(connection);
-            final JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-            final List<Map<String, Object>> rows = jdbcTemplate.queryForList(connection.getSql());
-            for (final Map row : rows) {
+            val connection = new JdbcCloudConnection(environment);
+            val dataSource = JpaBeans.newDataSource(connection);
+            val jdbcTemplate = new JdbcTemplate(dataSource);
+            val rows = jdbcTemplate.queryForList(connection.getSql());
+            for (val row : rows) {
                 props.put(row.get("name"), row.get("value"));
             }
         } catch (final Exception e) {

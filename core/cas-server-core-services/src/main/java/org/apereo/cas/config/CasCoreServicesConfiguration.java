@@ -1,10 +1,5 @@
 package org.apereo.cas.config;
 
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apereo.cas.audit.AuditableExecution;
 import org.apereo.cas.authentication.DefaultMultifactorTriggerSelectionStrategy;
 import org.apereo.cas.authentication.MultifactorTriggerSelectionStrategy;
@@ -34,7 +29,15 @@ import org.apereo.cas.services.replication.RegisteredServiceReplicationStrategy;
 import org.apereo.cas.services.resource.DefaultRegisteredServiceResourceNamingStrategy;
 import org.apereo.cas.services.resource.RegisteredServiceResourceNamingStrategy;
 import org.apereo.cas.services.util.RegisteredServicePublicKeyCipherExecutor;
+import org.apereo.cas.services.util.RegisteredServiceYamlHttpMessageConverter;
 import org.apereo.cas.util.io.CommunicationsManager;
+
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.RegExUtils;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -46,11 +49,10 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.AnnotationAwareOrderComparator;
+import org.springframework.http.converter.AbstractHttpMessageConverter;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * This is {@link CasCoreServicesConfiguration}.
@@ -93,8 +95,8 @@ public class CasCoreServicesConfiguration {
     @ConditionalOnMissingBean(name = "webApplicationResponseBuilderLocator")
     @Bean
     public ResponseBuilderLocator webApplicationResponseBuilderLocator() {
-        final Map<String, ResponseBuilder> beans = applicationContext.getBeansOfType(ResponseBuilder.class, false, true);
-        final List<ResponseBuilder> builders = beans.values().stream().collect(Collectors.toList());
+        val beans = applicationContext.getBeansOfType(ResponseBuilder.class, false, true);
+        val builders = new ArrayList<ResponseBuilder>(beans.values());
         AnnotationAwareOrderComparator.sortIfNecessary(builders);
         return new DefaultWebApplicationResponseBuilderLocator(builders);
     }
@@ -135,7 +137,11 @@ public class CasCoreServicesConfiguration {
     }
 
     @Bean
-    @RefreshScope
+    public AbstractHttpMessageConverter yamlHttpMessageConverter() {
+        return new RegisteredServiceYamlHttpMessageConverter();
+    }
+
+    @Bean
     public RegisteredServicesEventListener registeredServicesEventListener() {
         return new RegisteredServicesEventListener(servicesManager(), casProperties, communicationsManager);
     }
@@ -158,17 +164,18 @@ public class CasCoreServicesConfiguration {
     @Bean
     @RefreshScope
     public ServiceRegistry serviceRegistry() {
-        final List<ServiceRegistryExecutionPlanConfigurer> configurers = ObjectUtils.defaultIfNull(serviceRegistryDaoConfigurers.getIfAvailable(), new ArrayList<>(0));
-        final DefaultServiceRegistryExecutionPlan plan = new DefaultServiceRegistryExecutionPlan();
+        val configurers = ObjectUtils.defaultIfNull(serviceRegistryDaoConfigurers.getIfAvailable(),
+            new ArrayList<ServiceRegistryExecutionPlanConfigurer>(0));
+        val plan = new DefaultServiceRegistryExecutionPlan();
         configurers.forEach(c -> {
-            final String name = StringUtils.removePattern(c.getClass().getSimpleName(), "\\$.+");
+            val name = RegExUtils.removePattern(c.getClass().getSimpleName(), "\\$.+");
             LOGGER.debug("Configuring service registry [{}]", name);
             c.configureServiceRegistry(plan);
         });
 
-        final Predicate filter = Predicates.not(Predicates.instanceOf(ImmutableServiceRegistry.class));
+        val filter = (Predicate) Predicates.not(Predicates.instanceOf(ImmutableServiceRegistry.class));
         if (plan.getServiceRegistries(filter).isEmpty()) {
-            final List<RegisteredService> services = new ArrayList<>();
+            val services = new ArrayList<RegisteredService>();
             LOGGER.warn("Runtime memory is used as the persistence storage for retrieving and persisting service definitions. "
                 + "Changes that are made to service definitions during runtime WILL be LOST when the web server is restarted. "
                 + "Ideally for production, you need to choose a storage option (JDBC, etc) to store and track service definitions.");

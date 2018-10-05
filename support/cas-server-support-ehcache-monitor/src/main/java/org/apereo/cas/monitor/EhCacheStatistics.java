@@ -1,9 +1,7 @@
 package org.apereo.cas.monitor;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import net.sf.ehcache.Cache;
-import net.sf.ehcache.config.CacheConfiguration;
-import net.sf.ehcache.statistics.StatisticsGateway;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Formatter;
@@ -14,12 +12,11 @@ import java.util.Formatter;
  * @author Marvin S. Addison
  * @since 3.5.1
  */
-@Slf4j
 public class EhCacheStatistics implements CacheStatistics {
 
     private static final double TOTAL_NUMBER_BYTES_IN_ONE_MEGABYTE = 1048510.0;
     private static final int PERCENTAGE_VALUE = 100;
-    
+
     private final Cache cache;
 
     private final boolean useBytes;
@@ -48,7 +45,7 @@ public class EhCacheStatistics implements CacheStatistics {
      */
     @Override
     public long getSize() {
-        final StatisticsGateway statistics = this.cache.getStatistics();
+        val statistics = this.cache.getStatistics();
         if (this.useBytes) {
             this.diskSize = statistics.getLocalDiskSizeInBytes();
             this.heapSize = statistics.getLocalHeapSizeInBytes();
@@ -67,7 +64,7 @@ public class EhCacheStatistics implements CacheStatistics {
      */
     @Override
     public long getCapacity() {
-        final CacheConfiguration config = this.cache.getCacheConfiguration();
+        val config = this.cache.getCacheConfiguration();
         if (this.useBytes) {
             return config.getMaxBytesLocalDisk();
         }
@@ -81,7 +78,7 @@ public class EhCacheStatistics implements CacheStatistics {
 
     @Override
     public long getPercentFree() {
-        final long capacity = getCapacity();
+        val capacity = getCapacity();
         if (capacity == 0) {
             return 0;
         }
@@ -95,11 +92,12 @@ public class EhCacheStatistics implements CacheStatistics {
 
     @Override
     public String toString(final StringBuilder builder) {
-        final String name = this.getName();
+        val name = this.getName();
         if (StringUtils.isNotBlank(name)) {
             builder.append(name).append(':');
         }
-        try (Formatter formatter = new Formatter(builder)) {
+        val free = getPercentFree();
+        try (val formatter = new Formatter(builder)) {
             if (this.useBytes) {
                 formatter.format("%.2f MB heap, ", this.heapSize / TOTAL_NUMBER_BYTES_IN_ONE_MEGABYTE);
                 formatter.format("%.2f MB disk, ", this.diskSize / TOTAL_NUMBER_BYTES_IN_ONE_MEGABYTE);

@@ -1,5 +1,6 @@
 package org.apereo.cas;
 
+import lombok.val;
 import org.jose4j.jwe.ContentEncryptionAlgorithmIdentifiers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +26,33 @@ public interface CipherExecutor<I, O> {
      */
     String DEFAULT_CONTENT_ENCRYPTION_ALGORITHM =
         ContentEncryptionAlgorithmIdentifiers.AES_128_CBC_HMAC_SHA_256;
+
+    /**
+     * Factory method.
+     *
+     * @return Strongly -typed Noop {@code CipherExecutor Serializable -> Serializable}
+     */
+    static CipherExecutor<Serializable, Serializable> noOp() {
+        return NoOpCipherExecutor.getInstance();
+    }
+
+    /**
+     * Factory method.
+     *
+     * @return Strongly -typed Noop {@code CipherExecutor String -> String}
+     */
+    static CipherExecutor<String, String> noOpOfStringToString() {
+        return NoOpCipherExecutor.getInstance();
+    }
+
+    /**
+     * Factory method.
+     *
+     * @return Strongly -typed Noop {@code CipherExecutor Serializable -> String}
+     */
+    static CipherExecutor<Serializable, String> noOpOfSerializableToString() {
+        return NoOpCipherExecutor.getInstance();
+    }
 
     /**
      * Encrypt the value. Implementations may
@@ -73,11 +101,11 @@ public interface CipherExecutor<I, O> {
      * @return the map
      */
     default Map<String, Object> decode(Map<String, Object> properties, final Object[] parameters) {
-        final Map<String, Object> decrypted = new HashMap<>();
+        val decrypted = new HashMap<String, Object>();
         properties.forEach((key, value) -> {
             try {
                 LOGGER.debug("Attempting to decode key [{}]", key);
-                final Object result = decode((I) value, parameters);
+                val result = decode((I) value, parameters);
                 if (result != null) {
                     LOGGER.debug("Decrypted key [{}] successfully", key);
                     decrypted.put(key, result);
@@ -106,33 +134,6 @@ public interface CipherExecutor<I, O> {
      */
     default String getName() {
         return getClass().getSimpleName();
-    }
-
-    /**
-     * Factory method.
-     *
-     * @return Strongly -typed Noop {@code CipherExecutor Serializable -> Serializable}
-     */
-    static CipherExecutor<Serializable, Serializable> noOp() {
-        return NoOpCipherExecutor.getInstance();
-    }
-
-    /**
-     * Factory method.
-     *
-     * @return Strongly -typed Noop {@code CipherExecutor String -> String}
-     */
-    static CipherExecutor<String, String> noOpOfStringToString() {
-        return NoOpCipherExecutor.getInstance();
-    }
-
-    /**
-     * Factory method.
-     *
-     * @return Strongly -typed Noop {@code CipherExecutor Serializable -> String}
-     */
-    static CipherExecutor<Serializable, String> noOpOfSerializableToString() {
-        return NoOpCipherExecutor.getInstance();
     }
 
 

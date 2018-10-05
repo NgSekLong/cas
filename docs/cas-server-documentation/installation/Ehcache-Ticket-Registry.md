@@ -1,6 +1,7 @@
 ---
 layout: default
 title: CAS - Ehcache Ticket Registry
+category: Ticketing
 ---
 
 # Ehcache Ticket Registry
@@ -24,13 +25,13 @@ across the cluster of nodes that are defined in the configuration.
 
 
 ### RMI Replication
-Ehcache supports [RMI](http://docs.oracle.com/javase/6/docs/technotes/guides/rmi/index.html)
+Ehcache supports [RMI](https://docs.oracle.com/javase/tutorial/rmi/index.html)
 replication for distributed caches composed of two or more nodes. To learn more about RMI
 replication with Ehcache, [see this resource](http://ehcache.org/documentation/user-guide/rmi-replicated-caching).
 
 #### Configuration
 
-To see the relevant list of CAS properties, please [review this guide](Configuration-Properties.html#ehcache-ticket-registry).
+To see the relevant list of CAS properties, please [review this guide](../configuration/Configuration-Properties.html#ehcache-ticket-registry).
 
 The Ehcache configuration for `ehcache-replicated.xml` mentioned in the config follows.
 

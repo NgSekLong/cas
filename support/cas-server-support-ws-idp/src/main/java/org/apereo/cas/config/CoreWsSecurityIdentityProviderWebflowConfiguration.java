@@ -1,6 +1,5 @@
 package org.apereo.cas.config;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apereo.cas.authentication.AuthenticationServiceSelectionStrategy;
 import org.apereo.cas.configuration.CasConfigurationProperties;
 import org.apereo.cas.services.ServicesManager;
@@ -10,6 +9,8 @@ import org.apereo.cas.web.flow.CasWebflowExecutionPlanConfigurer;
 import org.apereo.cas.web.flow.config.CasCoreWebflowConfiguration;
 import org.apereo.cas.ws.idp.web.flow.WSFederationMetadataUIAction;
 import org.apereo.cas.ws.idp.web.flow.WSFederationWebflowConfigurer;
+
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
@@ -32,7 +33,6 @@ import org.springframework.webflow.execution.Action;
  */
 @Configuration("coreWsSecurityIdentityProviderWebflowConfiguration")
 @EnableConfigurationProperties(CasConfigurationProperties.class)
-@Slf4j
 @AutoConfigureAfter(CasCoreWebflowConfiguration.class)
 public class CoreWsSecurityIdentityProviderWebflowConfiguration implements CasWebflowExecutionPlanConfigurer {
 
@@ -44,7 +44,7 @@ public class CoreWsSecurityIdentityProviderWebflowConfiguration implements CasWe
 
     @Autowired
     @Qualifier("servicesManager")
-    private ServicesManager servicesManager;
+    private ObjectProvider<ServicesManager> servicesManager;
 
     @Autowired
     private CasConfigurationProperties casProperties;
@@ -60,7 +60,7 @@ public class CoreWsSecurityIdentityProviderWebflowConfiguration implements CasWe
     @Bean
     @RefreshScope
     public Action wsFederationMetadataUIAction() {
-        return new WSFederationMetadataUIAction(servicesManager, wsFederationAuthenticationServiceSelectionStrategy);
+        return new WSFederationMetadataUIAction(servicesManager.getIfAvailable(), wsFederationAuthenticationServiceSelectionStrategy);
     }
 
     @ConditionalOnMissingBean(name = "wsFederationWebflowConfigurer")
