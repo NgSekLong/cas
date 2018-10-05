@@ -1,15 +1,12 @@
 package org.apereo.cas.config;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apereo.cas.CentralAuthenticationService;
-import org.apereo.cas.authentication.AuthenticationAttributeReleasePolicy;
 import org.apereo.cas.authentication.AuthenticationContextValidator;
 import org.apereo.cas.authentication.AuthenticationSystemSupport;
 import org.apereo.cas.authentication.MultifactorTriggerSelectionStrategy;
 import org.apereo.cas.authentication.ProtocolAttributeEncoder;
 import org.apereo.cas.authentication.principal.ResponseBuilder;
 import org.apereo.cas.configuration.CasConfigurationProperties;
-import org.apereo.cas.configuration.model.support.saml.SamlCoreProperties;
 import org.apereo.cas.services.ServicesManager;
 import org.apereo.cas.support.saml.OpenSamlConfigBean;
 import org.apereo.cas.support.saml.authentication.principal.SamlServiceResponseBuilder;
@@ -18,9 +15,12 @@ import org.apereo.cas.support.saml.web.SamlValidateController;
 import org.apereo.cas.support.saml.web.view.Saml10FailureResponseView;
 import org.apereo.cas.support.saml.web.view.Saml10SuccessResponseView;
 import org.apereo.cas.ticket.proxy.ProxyHandler;
+import org.apereo.cas.validation.AuthenticationAttributeReleasePolicy;
 import org.apereo.cas.validation.CasProtocolValidationSpecification;
 import org.apereo.cas.validation.ServiceTicketValidationAuthorizersExecutionPlan;
 import org.apereo.cas.web.support.ArgumentExtractor;
+
+import lombok.val;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -41,7 +41,6 @@ import java.nio.charset.StandardCharsets;
  */
 @Configuration("samlConfiguration")
 @EnableConfigurationProperties(CasConfigurationProperties.class)
-@Slf4j
 public class SamlConfiguration {
 
     @Autowired
@@ -69,11 +68,11 @@ public class SamlConfiguration {
 
     @Autowired
     @Qualifier("servicesManager")
-    private ServicesManager servicesManager;
+    private ObjectProvider<ServicesManager> servicesManager;
 
     @Autowired
     @Qualifier("centralAuthenticationService")
-    private CentralAuthenticationService centralAuthenticationService;
+    private ObjectProvider<CentralAuthenticationService> centralAuthenticationService;
 
     @Autowired
     @Qualifier("authenticationAttributeReleasePolicy")
@@ -85,7 +84,7 @@ public class SamlConfiguration {
 
     @Autowired
     @Qualifier("defaultAuthenticationSystemSupport")
-    private AuthenticationSystemSupport authenticationSystemSupport;
+    private ObjectProvider<AuthenticationSystemSupport> authenticationSystemSupport;
 
     @Autowired
     @Qualifier("cas20WithoutProxyProtocolValidationSpecification")
@@ -103,10 +102,9 @@ public class SamlConfiguration {
     @RefreshScope
     @Bean
     public View casSamlServiceSuccessView() {
-        final SamlCoreProperties samlCore = casProperties.getSamlCore();
+        val samlCore = casProperties.getSamlCore();
         return new Saml10SuccessResponseView(protocolAttributeEncoder,
-            servicesManager,
-            casProperties.getAuthn().getMfa().getAuthenticationContextAttribute(),
+            servicesManager.getIfAvailable(),
             saml10ObjectBuilder(),
             argumentExtractor.getIfAvailable(),
             StandardCharsets.UTF_8.name(),
@@ -122,8 +120,7 @@ public class SamlConfiguration {
     @Bean
     public View casSamlServiceFailureView() {
         return new Saml10FailureResponseView(protocolAttributeEncoder,
-            servicesManager,
-            casProperties.getAuthn().getMfa().getAuthenticationContextAttribute(),
+            servicesManager.getIfAvailable(),
             saml10ObjectBuilder(),
             argumentExtractor.getIfAvailable(),
             StandardCharsets.UTF_8.name(),
@@ -136,7 +133,7 @@ public class SamlConfiguration {
     @ConditionalOnMissingBean(name = "samlServiceResponseBuilder")
     @Bean
     public ResponseBuilder samlServiceResponseBuilder() {
-        return new SamlServiceResponseBuilder(servicesManager);
+        return new SamlServiceResponseBuilder(servicesManager.getIfAvailable());
     }
 
     @ConditionalOnMissingBean(name = "saml10ObjectBuilder")
@@ -148,9 +145,9 @@ public class SamlConfiguration {
     @Bean
     public SamlValidateController samlValidateController() {
         return new SamlValidateController(cas20WithoutProxyProtocolValidationSpecification,
-            authenticationSystemSupport,
-            servicesManager,
-            centralAuthenticationService,
+            authenticationSystemSupport.getIfAvailable(),
+            servicesManager.getIfAvailable(),
+            centralAuthenticationService.getIfAvailable(),
             proxy20Handler,
             argumentExtractor.getIfAvailable(),
             multifactorTriggerSelectionStrategy,

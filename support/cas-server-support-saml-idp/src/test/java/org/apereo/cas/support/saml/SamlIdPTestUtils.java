@@ -1,7 +1,9 @@
 package org.apereo.cas.support.saml;
 
-import lombok.experimental.UtilityClass;
 import org.apereo.cas.support.saml.services.SamlRegisteredService;
+
+import lombok.experimental.UtilityClass;
+import lombok.val;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -21,13 +23,13 @@ public class SamlIdPTestUtils {
      * @return the saml registered service
      */
     public static SamlRegisteredService getSamlRegisteredService() {
-        final SamlRegisteredService registeredService = new SamlRegisteredService();
+        val registeredService = new SamlRegisteredService();
         registeredService.setId(100);
         registeredService.setName("SAML");
         registeredService.setServiceId("https://sp.testshib.org/shibboleth-sp");
-        registeredService.setMetadataLocation("http://www.testshib.org/metadata/testshib-providers.xml");
+        registeredService.setMetadataLocation("classpath:metadata/testshib-providers.xml");
 
-        final MockHttpServletRequest request = new MockHttpServletRequest();
+        val request = new MockHttpServletRequest();
         request.addParameter(SamlProtocolConstants.PARAMETER_ENTITY_ID, registeredService.getServiceId());
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
         return registeredService;

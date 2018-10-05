@@ -1,7 +1,17 @@
 package org.apereo.cas.support.saml.services.idp.metadata.cache.resolver;
 
+import org.apereo.cas.configuration.model.support.saml.idp.SamlIdPProperties;
+import org.apereo.cas.services.RegisteredService;
+import org.apereo.cas.support.saml.InMemoryResourceMetadataResolver;
+import org.apereo.cas.support.saml.OpenSamlConfigBean;
+import org.apereo.cas.support.saml.services.SamlRegisteredService;
+import org.apereo.cas.util.CollectionUtils;
+import org.apereo.cas.util.HttpRequestUtils;
+import org.apereo.cas.util.HttpUtils;
+
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOCase;
 import org.apache.commons.io.IOUtils;
@@ -13,14 +23,6 @@ import org.apache.commons.io.filefilter.SuffixFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
-import org.apereo.cas.configuration.model.support.saml.idp.SamlIdPProperties;
-import org.apereo.cas.configuration.model.support.saml.idp.metadata.SamlIdPMetadataProperties;
-import org.apereo.cas.services.RegisteredService;
-import org.apereo.cas.support.saml.InMemoryResourceMetadataResolver;
-import org.apereo.cas.support.saml.OpenSamlConfigBean;
-import org.apereo.cas.support.saml.services.SamlRegisteredService;
-import org.apereo.cas.util.CollectionUtils;
-import org.apereo.cas.util.HttpUtils;
 import org.opensaml.saml.metadata.resolver.MetadataResolver;
 import org.opensaml.saml.metadata.resolver.impl.AbstractMetadataResolver;
 import org.springframework.core.io.AbstractResource;
@@ -29,7 +31,6 @@ import org.springframework.http.HttpStatus;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -45,14 +46,14 @@ import java.util.UUID;
  */
 @Slf4j
 public class UrlResourceMetadataResolver extends BaseSamlRegisteredServiceMetadataResolver {
-    private File metadataBackupDirectory;
+    private final File metadataBackupDirectory;
 
     @SneakyThrows
     public UrlResourceMetadataResolver(final SamlIdPProperties samlIdPProperties,
                                        final OpenSamlConfigBean configBean) {
         super(samlIdPProperties, configBean);
 
-        final SamlIdPMetadataProperties md = samlIdPProperties.getMetadata();
+        val md = samlIdPProperties.getMetadata();
         this.metadataBackupDirectory = new File(md.getLocation().getFile(), "metadata-backups");
         try {
             FileUtils.forceMkdir(this.metadataBackupDirectory);
@@ -64,23 +65,23 @@ public class UrlResourceMetadataResolver extends BaseSamlRegisteredServiceMetada
     }
 
     @Override
-    public Collection<MetadataResolver> resolve(final SamlRegisteredService service) {
+    public Collection<? extends MetadataResolver> resolve(final SamlRegisteredService service) {
         try {
-            final String metadataLocation = getMetadataLocationForService(service);
+            val metadataLocation = getMetadataLocationForService(service);
             LOGGER.info("Loading SAML metadata from [{}]", metadataLocation);
-            final UrlResource metadataResource = new UrlResource(metadataLocation);
+            val metadataResource = new UrlResource(metadataLocation);
 
-            final File backupFile = getMetadataBackupFile(metadataResource, service);
-            final String canonicalPath = backupFile.getCanonicalPath();
+            val backupFile = getMetadataBackupFile(metadataResource, service);
+            val canonicalPath = backupFile.getCanonicalPath();
             LOGGER.debug("Metadata backup file will be at [{}]", canonicalPath);
             FileUtils.forceMkdirParent(backupFile);
 
-            final HttpResponse response = fetchMetadata(metadataLocation);
+            val response = fetchMetadata(metadataLocation);
             cleanUpExpiredBackupMetadataFilesFor(metadataResource, service);
             if (response != null) {
-                final HttpStatus status = HttpStatus.valueOf(response.getStatusLine().getStatusCode());
+                val status = HttpStatus.valueOf(response.getStatusLine().getStatusCode());
                 if (shouldHttpResponseStatusBeProcessed(status)) {
-                    final AbstractMetadataResolver metadataProvider = getMetadataResolverFromResponse(response, backupFile);
+                    val metadataProvider = getMetadataResolverFromResponse(response, backupFile);
                     configureAndInitializeSingleMetadataResolver(metadataProvider, service);
                     return CollectionUtils.wrap(metadataProvider);
                 }
@@ -110,8 +111,8 @@ public class UrlResourceMetadataResolver extends BaseSamlRegisteredServiceMetada
      * @throws Exception the exception
      */
     protected AbstractMetadataResolver getMetadataResolverFromResponse(final HttpResponse response, final File backupFile) throws Exception {
-        final String result = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8);
-        try (Writer output = Files.newBufferedWriter(backupFile.toPath(), StandardCharsets.UTF_8)) {
+        val result = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8);
+        try (val output = Files.newBufferedWriter(backupFile.toPath(), StandardCharsets.UTF_8)) {
             IOUtils.write(result, output);
             output.flush();
         }
@@ -140,8 +141,8 @@ public class UrlResourceMetadataResolver extends BaseSamlRegisteredServiceMetada
     }
 
     private void cleanUpExpiredBackupMetadataFilesFor(final AbstractResource metadataResource, final SamlRegisteredService service) {
-        final String prefix = getBackupMetadataFilenamePrefix(metadataResource, service);
-        final Collection<File> backups = FileUtils.listFiles(this.metadataBackupDirectory,
+        val prefix = getBackupMetadataFilenamePrefix(metadataResource, service);
+        val backups = FileUtils.listFiles(this.metadataBackupDirectory,
             new AndFileFilter(CollectionUtils.wrapList(new PrefixFileFilter(prefix, IOCase.INSENSITIVE),
                 new SuffixFileFilter(".xml", IOCase.INSENSITIVE),
                 CanWriteFileFilter.CAN_WRITE, CanReadFileFilter.CAN_READ)), TrueFileFilter.INSTANCE);
@@ -168,10 +169,10 @@ public class UrlResourceMetadataResolver extends BaseSamlRegisteredServiceMetada
 
         LOGGER.debug("Metadata backup directory is at [{}]", this.metadataBackupDirectory.getCanonicalPath());
 
-        final String metadataFileName = getBackupMetadataFilenamePrefix(metadataResource, service)
+        val metadataFileName = getBackupMetadataFilenamePrefix(metadataResource, service)
             .concat(getBackupMetadataFilenameSuffix(metadataResource, service));
 
-        final File backupFile = new File(this.metadataBackupDirectory, metadataFileName);
+        val backupFile = new File(this.metadataBackupDirectory, metadataFileName);
         if (backupFile.exists()) {
             LOGGER.warn("Metadata file designated for service [{}] already exists at path [{}].", service.getName(), backupFile.getCanonicalPath());
         } else {
@@ -196,10 +197,19 @@ public class UrlResourceMetadataResolver extends BaseSamlRegisteredServiceMetada
     @Override
     public boolean supports(final SamlRegisteredService service) {
         try {
-            final String metadataLocation = getMetadataLocationForService(service);
+            val metadataLocation = getMetadataLocationForService(service);
             return StringUtils.isNotBlank(metadataLocation) && StringUtils.startsWith(metadataLocation, "http");
         } catch (final Exception e) {
             LOGGER.error(e.getMessage(), e);
+        }
+        return false;
+    }
+
+    @Override
+    public boolean isAvailable(final SamlRegisteredService service) {
+        if (supports(service)) {
+            val status = HttpRequestUtils.pingUrl(service.getMetadataLocation());
+            return !status.isError();
         }
         return false;
     }

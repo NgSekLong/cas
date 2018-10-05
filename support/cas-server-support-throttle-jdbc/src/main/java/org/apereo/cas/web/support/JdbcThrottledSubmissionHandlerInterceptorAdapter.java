@@ -1,17 +1,16 @@
 package org.apereo.cas.web.support;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apereo.cas.audit.AuditTrailExecutionPlan;
-import org.apereo.inspektr.common.web.ClientInfo;
+import org.apereo.cas.throttle.ThrottledRequestResponseHandler;
+
+import lombok.val;
 import org.apereo.inspektr.common.web.ClientInfoHolder;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.sql.DataSource;
-import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.Date;
-import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -26,7 +25,6 @@ import java.util.stream.Collectors;
  * @author Scott Battaglia
  * @since 3.3.5
  */
-@Slf4j
 public class JdbcThrottledSubmissionHandlerInterceptorAdapter extends AbstractInspektrAuditHandlerInterceptorAdapter {
     private final DataSource dataSource;
     private final String sqlQueryAudit;
@@ -37,9 +35,11 @@ public class JdbcThrottledSubmissionHandlerInterceptorAdapter extends AbstractIn
                                                             final String usernameParameter,
                                                             final AuditTrailExecutionPlan auditTrailManager,
                                                             final DataSource dataSource, final String applicationCode,
-                                                            final String sqlQueryAudit, final String authenticationFailureCode) {
+                                                            final String sqlQueryAudit, final String authenticationFailureCode,
+                                                            final ThrottledRequestResponseHandler throttledRequestResponseHandler) {
         super(failureThreshold, failureRangeInSeconds, usernameParameter,
-            authenticationFailureCode, auditTrailManager, applicationCode);
+            authenticationFailureCode, auditTrailManager, applicationCode,
+            throttledRequestResponseHandler);
         this.dataSource = dataSource;
         this.sqlQueryAudit = sqlQueryAudit;
         this.jdbcTemplate = new JdbcTemplate(this.dataSource);
@@ -47,10 +47,10 @@ public class JdbcThrottledSubmissionHandlerInterceptorAdapter extends AbstractIn
 
     @Override
     public boolean exceedsThreshold(final HttpServletRequest request) {
-        final ClientInfo clientInfo = ClientInfoHolder.getClientInfo();
-        final String remoteAddress = clientInfo.getClientIpAddress();
+        val clientInfo = ClientInfoHolder.getClientInfo();
+        val remoteAddress = clientInfo.getClientIpAddress();
 
-        final List<Timestamp> failuresInAudits = this.jdbcTemplate.query(
+        val failuresInAudits = this.jdbcTemplate.query(
             this.sqlQueryAudit,
             new Object[]{
                 remoteAddress,
@@ -61,7 +61,7 @@ public class JdbcThrottledSubmissionHandlerInterceptorAdapter extends AbstractIn
             new int[]{Types.VARCHAR, Types.VARCHAR, Types.VARCHAR, Types.VARCHAR, Types.TIMESTAMP},
             (resultSet, i) -> resultSet.getTimestamp(1));
 
-        final List<Date> failures = failuresInAudits.stream().map(t -> new Date(t.getTime())).collect(Collectors.toList());
+        val failures = failuresInAudits.stream().map(t -> new Date(t.getTime())).collect(Collectors.toList());
         return calculateFailureThresholdRateAndCompare(failures);
     }
 

@@ -1,6 +1,5 @@
 package org.apereo.cas.config;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apereo.cas.CasEmbeddedValueResolver;
 import org.apereo.cas.util.SchedulingUtils;
 import org.apereo.cas.util.io.CommunicationsManager;
@@ -8,6 +7,9 @@ import org.apereo.cas.util.io.SmsSender;
 import org.apereo.cas.util.spring.ApplicationContextProvider;
 import org.apereo.cas.util.spring.Converters;
 import org.apereo.cas.util.spring.SpringAwareMessageMessageInterpolator;
+
+import lombok.val;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -15,10 +17,10 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.autoconfigure.AutoConfigureOrder;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Role;
+import org.springframework.context.annotation.Scope;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.convert.converter.Converter;
@@ -31,7 +33,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.util.StringValueResolver;
 import org.springframework.validation.beanvalidation.BeanValidationPostProcessor;
 
-import javax.annotation.PostConstruct;
 import javax.validation.MessageInterpolator;
 import java.time.ZonedDateTime;
 
@@ -44,8 +45,7 @@ import java.time.ZonedDateTime;
 @Configuration("casCoreUtilConfiguration")
 @AutoConfigureOrder(Ordered.HIGHEST_PRECEDENCE)
 @EnableScheduling
-@Slf4j
-public class CasCoreUtilConfiguration {
+public class CasCoreUtilConfiguration implements InitializingBean {
 
     @Autowired
     @Qualifier("smsSender")
@@ -59,6 +59,7 @@ public class CasCoreUtilConfiguration {
     private ApplicationContext applicationContext;
 
     @Bean
+    @Scope(value = "prototype")
     public ApplicationContextProvider applicationContextProvider() {
         return new ApplicationContextProvider();
     }
@@ -69,6 +70,7 @@ public class CasCoreUtilConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean(name = "communicationsManager")
     public CommunicationsManager communicationsManager() {
         return new CommunicationsManager(smsSender.getIfAvailable(), mailSender.getIfAvailable());
     }
@@ -91,15 +93,15 @@ public class CasCoreUtilConfiguration {
         return new BeanValidationPostProcessor();
     }
 
-    @PostConstruct
-    public void init() {
-        final ConfigurableApplicationContext ctx = applicationContextProvider().getConfigurableApplicationContext();
-        final DefaultFormattingConversionService conversionService = new DefaultFormattingConversionService(true);
+    @Override
+    public void afterPropertiesSet() {
+        val ctx = applicationContextProvider().getConfigurableApplicationContext();
+        val conversionService = new DefaultFormattingConversionService(true);
         conversionService.setEmbeddedValueResolver(new CasEmbeddedValueResolver(ctx));
         ctx.getEnvironment().setConversionService(conversionService);
-        final ConfigurableEnvironment env = (ConfigurableEnvironment) ctx.getParent().getEnvironment();
+        val env = (ConfigurableEnvironment) ctx.getParent().getEnvironment();
         env.setConversionService(conversionService);
-        final ConverterRegistry registry = (ConverterRegistry) DefaultConversionService.getSharedInstance();
+        val registry = (ConverterRegistry) DefaultConversionService.getSharedInstance();
         registry.addConverter(zonedDateTimeToStringConverter());
     }
 }

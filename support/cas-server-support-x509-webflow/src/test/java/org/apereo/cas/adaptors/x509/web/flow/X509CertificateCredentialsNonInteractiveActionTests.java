@@ -1,11 +1,12 @@
 package org.apereo.cas.adaptors.x509.web.flow;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apereo.cas.adaptors.x509.authentication.principal.AbstractX509CertificateTests;
 import org.apereo.cas.adaptors.x509.config.X509AuthenticationConfiguration;
 import org.apereo.cas.web.flow.CasWebflowConstants;
 import org.apereo.cas.web.flow.X509CertificateCredentialsNonInteractiveAction;
 import org.apereo.cas.web.flow.config.X509AuthenticationWebflowConfiguration;
+
+import lombok.val;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -29,7 +30,6 @@ import static org.junit.Assert.*;
  */
 @TestPropertySource(locations = {"classpath:/x509.properties"})
 @Import(value = {X509AuthenticationWebflowConfiguration.class, X509AuthenticationConfiguration.class})
-@Slf4j
 public class X509CertificateCredentialsNonInteractiveActionTests extends AbstractX509CertificateTests {
 
     @Autowired
@@ -38,7 +38,7 @@ public class X509CertificateCredentialsNonInteractiveActionTests extends Abstrac
 
     @Test
     public void verifyNoCredentialsResultsInError() throws Exception {
-        final MockRequestContext context = new MockRequestContext();
+        val context = new MockRequestContext();
         context.setExternalContext(new ServletExternalContext(
             new MockServletContext(), new MockHttpServletRequest(), new MockHttpServletResponse()));
         assertEquals(CasWebflowConstants.TRANSITION_ID_ERROR, this.action.execute(context).getId());
@@ -46,8 +46,8 @@ public class X509CertificateCredentialsNonInteractiveActionTests extends Abstrac
 
     @Test
     public void verifyCredentialsResultsInSuccess() throws Exception {
-        final MockRequestContext context = new MockRequestContext();
-        final MockHttpServletRequest request = new MockHttpServletRequest();
+        val context = new MockRequestContext();
+        val request = new MockHttpServletRequest();
         request.setAttribute(X509CertificateCredentialsNonInteractiveAction.REQUEST_ATTRIBUTE_X509_CERTIFICATE, new X509Certificate[]{VALID_CERTIFICATE});
         context.setExternalContext(new ServletExternalContext(new MockServletContext(), request, new MockHttpServletResponse()));
         assertEquals(CasWebflowConstants.TRANSITION_ID_SUCCESS, this.action.execute(context).getId());

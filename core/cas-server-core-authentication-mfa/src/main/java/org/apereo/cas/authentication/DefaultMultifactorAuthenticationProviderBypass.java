@@ -1,7 +1,5 @@
 package org.apereo.cas.authentication;
 
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.apereo.cas.authentication.principal.Principal;
 import org.apereo.cas.configuration.model.support.mfa.MultifactorAuthenticationProviderBypassProperties;
 import org.apereo.cas.services.MultifactorAuthenticationProvider;
@@ -9,9 +7,13 @@ import org.apereo.cas.services.RegisteredService;
 import org.apereo.cas.util.CollectionUtils;
 import org.apereo.cas.util.RegexUtils;
 
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.core.Ordered;
+
 import javax.servlet.http.HttpServletRequest;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -24,20 +26,15 @@ import java.util.stream.Collectors;
  * @since 5.0.0
  */
 @Slf4j
-public class DefaultMultifactorAuthenticationProviderBypass implements MultifactorAuthenticationProviderBypass {
+public class DefaultMultifactorAuthenticationProviderBypass extends AbstractMultifactorAuthenticationProviderBypass {
 
     private static final long serialVersionUID = 3720922341350004543L;
-
-    /**
-     * Bypass settings for this provider.
-     */
-    protected final MultifactorAuthenticationProviderBypassProperties bypassProperties;
 
     private final Pattern httpRequestRemoteAddressPattern;
     private final Set<Pattern> httpRequestHeaderPatterns;
 
     public DefaultMultifactorAuthenticationProviderBypass(final MultifactorAuthenticationProviderBypassProperties bypassProperties) {
-        this.bypassProperties = bypassProperties;
+        super(bypassProperties);
 
         if (StringUtils.isNotBlank(bypassProperties.getHttpRequestRemoteAddress())) {
             this.httpRequestRemoteAddressPattern = RegexUtils.createPattern(bypassProperties.getHttpRequestRemoteAddress());
@@ -45,7 +42,7 @@ public class DefaultMultifactorAuthenticationProviderBypass implements Multifact
             this.httpRequestRemoteAddressPattern = RegexUtils.MATCH_NOTHING_PATTERN;
         }
 
-        final Set<String> values = org.springframework.util.StringUtils.commaDelimitedListToSet(bypassProperties.getHttpRequestHeaders());
+        val values = org.springframework.util.StringUtils.commaDelimitedListToSet(bypassProperties.getHttpRequestHeaders());
         this.httpRequestHeaderPatterns = values.stream().map(RegexUtils::createPattern).collect(Collectors.toSet());
     }
 
@@ -54,24 +51,24 @@ public class DefaultMultifactorAuthenticationProviderBypass implements Multifact
                                                                   final RegisteredService registeredService,
                                                                   final MultifactorAuthenticationProvider provider,
                                                                   final HttpServletRequest request) {
-        final Principal principal = authentication.getPrincipal();
+        val principal = authentication.getPrincipal();
         LOGGER.debug("Evaluating multifactor authentication bypass properties for principal [{}], service [{}] and provider [{}]",
             principal.getId(), registeredService, provider);
-        final boolean bypassByPrincipal = locateMatchingAttributeBasedOnPrincipalAttributes(bypassProperties, principal);
+        val bypassByPrincipal = locateMatchingAttributeBasedOnPrincipalAttributes(bypassProperties, principal);
         if (bypassByPrincipal) {
             LOGGER.debug("Bypass rules for principal [{}] indicate the request may be ignored", principal.getId());
             updateAuthenticationToRememberBypass(authentication, provider, principal);
             return false;
         }
 
-        final boolean bypassByAuthn = locateMatchingAttributeBasedOnAuthenticationAttributes(bypassProperties, authentication);
+        val bypassByAuthn = locateMatchingAttributeBasedOnAuthenticationAttributes(bypassProperties, authentication);
         if (bypassByAuthn) {
             LOGGER.debug("Bypass rules for authentication for principal [{}] indicate the request may be ignored", principal.getId());
             updateAuthenticationToRememberBypass(authentication, provider, principal);
             return false;
         }
 
-        final boolean bypassByAuthnMethod = locateMatchingAttributeValue(
+        val bypassByAuthnMethod = locateMatchingAttributeValue(
             AuthenticationManager.AUTHENTICATION_METHOD_ATTRIBUTE,
             bypassProperties.getAuthenticationMethodName(),
             authentication.getAttributes(), false
@@ -82,7 +79,7 @@ public class DefaultMultifactorAuthenticationProviderBypass implements Multifact
             return false;
         }
 
-        final boolean bypassByHandlerName = locateMatchingAttributeValue(
+        val bypassByHandlerName = locateMatchingAttributeValue(
             AuthenticationHandler.SUCCESSFUL_AUTHENTICATION_HANDLERS,
             bypassProperties.getAuthenticationHandlerName(),
             authentication.getAttributes(), false
@@ -93,21 +90,21 @@ public class DefaultMultifactorAuthenticationProviderBypass implements Multifact
             return false;
         }
 
-        final boolean bypassByCredType = locateMatchingCredentialType(authentication, bypassProperties.getCredentialClassType());
+        val bypassByCredType = locateMatchingCredentialType(authentication, bypassProperties.getCredentialClassType());
         if (bypassByCredType) {
             LOGGER.debug("Bypass rules for credential types [{}] indicate the request may be ignored", bypassProperties.getCredentialClassType());
             updateAuthenticationToRememberBypass(authentication, provider, principal);
             return false;
         }
 
-        final boolean bypassByHttpRequest = locateMatchingHttpRequest(authentication, request);
+        val bypassByHttpRequest = locateMatchingHttpRequest(authentication, request);
         if (bypassByHttpRequest) {
             LOGGER.debug("Bypass rules for http request indicate the request may be ignored for [{}]", principal.getId());
             updateAuthenticationToRememberBypass(authentication, provider, principal);
             return false;
         }
 
-        final boolean bypassByService = locateMatchingRegisteredServiceForBypass(authentication, registeredService);
+        val bypassByService = locateMatchingRegisteredServiceForBypass(authentication, registeredService);
         if (bypassByService) {
             updateAuthenticationToRememberBypass(authentication, provider, principal);
             return false;
@@ -116,22 +113,6 @@ public class DefaultMultifactorAuthenticationProviderBypass implements Multifact
         updateAuthenticationToForgetBypass(authentication, provider, principal);
 
         return true;
-    }
-
-    private static void updateAuthenticationToForgetBypass(final Authentication authentication,
-                                                           final MultifactorAuthenticationProvider provider,
-                                                           final Principal principal) {
-        LOGGER.debug("Bypass rules for service [{}] indicate the request may be ignored", principal.getId());
-        authentication.addAttribute(AUTHENTICATION_ATTRIBUTE_BYPASS_MFA, Boolean.FALSE);
-        LOGGER.debug("Updated authentication session to remember bypass for [{}] via [{}]", provider.getId(), AUTHENTICATION_ATTRIBUTE_BYPASS_MFA);
-    }
-
-    private static void updateAuthenticationToRememberBypass(final Authentication authentication, final MultifactorAuthenticationProvider provider,
-                                                             final Principal principal) {
-        LOGGER.debug("Bypass rules for service [{}] indicate the request may NOT be ignored", principal.getId());
-        authentication.addAttribute(AUTHENTICATION_ATTRIBUTE_BYPASS_MFA, Boolean.TRUE);
-        authentication.addAttribute(AUTHENTICATION_ATTRIBUTE_BYPASS_MFA_PROVIDER, provider.getId());
-        LOGGER.debug("Updated authentication session to NOT remember bypass for [{}] via [{}]", provider.getId(), AUTHENTICATION_ATTRIBUTE_BYPASS_MFA);
     }
 
     /**
@@ -159,9 +140,7 @@ public class DefaultMultifactorAuthenticationProviderBypass implements Multifact
     protected boolean locateMatchingCredentialType(final Authentication authentication, final String credentialClassType) {
         return StringUtils.isNotBlank(credentialClassType) && authentication.getCredentials()
             .stream()
-            .filter(e -> e.getCredentialClass().getName().matches(credentialClassType))
-            .findAny()
-            .isPresent();
+            .anyMatch(e -> e.getCredentialClass().getName().matches(credentialClassType));
     }
 
     /**
@@ -220,7 +199,7 @@ public class DefaultMultifactorAuthenticationProviderBypass implements Multifact
             return false;
         }
 
-        final Set<Map.Entry<String, Object>> names = attributes.entrySet()
+        val names = attributes.entrySet()
             .stream()
             .filter(e -> {
                 LOGGER.debug("Attempting to match [{}] against [{}]", attrName, e.getKey());
@@ -239,16 +218,14 @@ public class DefaultMultifactorAuthenticationProviderBypass implements Multifact
             return matchIfNoValueProvided;
         }
 
-        final Set<Map.Entry<String, Object>> values = names
+        val values = names
             .stream()
             .filter(e -> {
-                final Set<Object> valuesCol = CollectionUtils.toCollection(e.getValue());
+                val valuesCol = CollectionUtils.toCollection(e.getValue());
                 LOGGER.debug("Matching attribute [{}] with values [{}] against [{}]", e.getKey(), valuesCol, attrValue);
                 return valuesCol
                     .stream()
-                    .filter(v -> v.toString().matches(attrValue))
-                    .findAny()
-                    .isPresent();
+                    .anyMatch(v -> v.toString().matches(attrValue));
             }).collect(Collectors.toSet());
 
         LOGGER.debug("Matching attribute values remaining are [{}]", values);
@@ -275,8 +252,8 @@ public class DefaultMultifactorAuthenticationProviderBypass implements Multifact
         }
 
         if (StringUtils.isNotBlank(bypassProperties.getHttpRequestHeaders())) {
-            final List<String> headerNames = Collections.list(request.getHeaderNames());
-            final boolean matched = this.httpRequestHeaderPatterns.stream()
+            val headerNames = Collections.list(request.getHeaderNames());
+            val matched = this.httpRequestHeaderPatterns.stream()
                 .anyMatch(pattern -> headerNames.stream().anyMatch(name -> pattern.matcher(name).matches()));
             if (matched) {
                 LOGGER.debug("Http request remote headers [{}] match [{}]", headerNames, bypassProperties.getHttpRequestHeaders());
@@ -285,5 +262,10 @@ public class DefaultMultifactorAuthenticationProviderBypass implements Multifact
         }
 
         return false;
+    }
+
+    @Override
+    public int getOrder() {
+        return Ordered.HIGHEST_PRECEDENCE;
     }
 }

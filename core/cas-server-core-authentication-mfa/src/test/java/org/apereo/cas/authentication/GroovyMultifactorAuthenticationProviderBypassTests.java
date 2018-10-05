@@ -4,6 +4,8 @@ import org.apereo.cas.authentication.mfa.TestMultifactorAuthenticationProvider;
 import org.apereo.cas.authentication.principal.Principal;
 import org.apereo.cas.configuration.model.support.mfa.MultifactorAuthenticationProviderBypassProperties;
 import org.apereo.cas.services.RegisteredService;
+
+import lombok.val;
 import org.junit.Test;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -25,17 +27,17 @@ public class GroovyMultifactorAuthenticationProviderBypassTests {
     }
 
     private boolean runGroovyBypassFor(final String username) {
-        final MockHttpServletRequest request = new MockHttpServletRequest();
-        final MultifactorAuthenticationProviderBypassProperties properties = new MultifactorAuthenticationProviderBypassProperties();
+        val request = new MockHttpServletRequest();
+        val properties = new MultifactorAuthenticationProviderBypassProperties();
         properties.getGroovy().setLocation(new ClassPathResource("GroovyBypass.groovy"));
-        final GroovyMultifactorAuthenticationProviderBypass groovy = new GroovyMultifactorAuthenticationProviderBypass(properties);
-        final TestMultifactorAuthenticationProvider provider = new TestMultifactorAuthenticationProvider();
+        val groovy = new GroovyMultifactorAuthenticationProviderBypass(properties);
+        val provider = new TestMultifactorAuthenticationProvider();
 
-        final Authentication authentication = mock(Authentication.class);
-        final Principal principal = mock(Principal.class);
+        val authentication = mock(Authentication.class);
+        val principal = mock(Principal.class);
         when(principal.getId()).thenReturn(username);
         when(authentication.getPrincipal()).thenReturn(principal);
-        final RegisteredService registeredService = mock(RegisteredService.class);
+        val registeredService = mock(RegisteredService.class);
         when(registeredService.getName()).thenReturn("Service");
         when(registeredService.getServiceId()).thenReturn("http://app.org");
         when(registeredService.getId()).thenReturn(1000L);

@@ -21,14 +21,18 @@ import org.apereo.cas.config.support.CasWebApplicationServiceFactoryConfiguratio
 import org.apereo.cas.logout.config.CasCoreLogoutConfiguration;
 import org.apereo.cas.otp.config.OneTimeTokenAuthenticationConfiguration;
 import org.apereo.cas.web.config.CasCookieConfiguration;
+
+import lombok.val;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.aop.AopAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.autoconfigure.RefreshAutoConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit4.rules.SpringClassRule;
+import org.springframework.test.context.junit4.rules.SpringMethodRule;
 
 import static org.junit.Assert.*;
 
@@ -38,7 +42,6 @@ import static org.junit.Assert.*;
  * @author Misagh Moayyed
  * @since 5.3.0
  */
-@RunWith(SpringRunner.class)
 @SpringBootTest(classes = {
     OneTimeTokenAuthenticationConfiguration.class,
     CasCoreTicketsConfiguration.class,
@@ -64,16 +67,28 @@ import static org.junit.Assert.*;
     CasCoreWebConfiguration.class
 })
 public class CachingOneTimeTokenRepositoryTests {
+    @ClassRule
+    public static final SpringClassRule SPRING_CLASS_RULE = new SpringClassRule();
+
+    @Rule
+    public final SpringMethodRule springMethodRule = new SpringMethodRule();
+
     @Autowired
     @Qualifier("oneTimeTokenAuthenticatorTokenRepository")
     private OneTimeTokenRepository repository;
 
     @Test
     public void verifyTokenSave() {
-        final OneTimeToken token = new OneTimeToken(1234, "casuser");
+        val token = new OneTimeToken(1234, "casuser");
         repository.store(token);
         repository.store(token);
+        assertEquals(2, repository.count("casuser"));
         repository.clean();
         assertTrue(repository.exists("casuser", 1234));
+        repository.remove("casuser");
+        repository.remove(1234);
+        repository.remove("casuser", 1234);
+        assertNull(repository.get("casuser", 1234));
+        assertEquals(0, repository.count());
     }
 }

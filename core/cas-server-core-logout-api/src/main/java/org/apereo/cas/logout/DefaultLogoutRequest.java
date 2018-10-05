@@ -1,12 +1,17 @@
 package org.apereo.cas.logout;
 
-import java.net.URL;
-
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 import org.apereo.cas.authentication.principal.WebApplicationService;
-import lombok.ToString;
+import org.apereo.cas.services.RegisteredService;
+import org.apereo.cas.ticket.TicketGrantingTicket;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+
+import javax.persistence.Transient;
+import java.net.URL;
 
 /**
  * Define a logout request for a service accessed by a user.
@@ -14,37 +19,41 @@ import lombok.Getter;
  * @author Jerome Leleu
  * @since 4.0.0
  */
-@Slf4j
 @ToString
 @Getter
 @Setter
+@Builder
 public class DefaultLogoutRequest implements LogoutRequest {
 
-    /** Generated serialVersionUID. */
+    /**
+     * Generated serialVersionUID.
+     */
     private static final long serialVersionUID = -6411421298859045022L;
 
-    /** The service ticket id. */
+    /**
+     * The service ticket id.
+     */
     private final String ticketId;
 
-    /** The service. */
+    /**
+     * The service.
+     */
     private final WebApplicationService service;
-
-    /** The status of the logout request. */
-    private LogoutRequestStatus status = LogoutRequestStatus.NOT_ATTEMPTED;
 
     private final URL logoutUrl;
 
+    @JsonIgnore
+    @Transient
+    private final transient RegisteredService registeredService;
+
+    @JsonIgnore
+    @Transient
+    private final transient TicketGrantingTicket ticketGrantingTicket;
+
     /**
-     * Build a logout request from ticket identifier and service.
-     * Default status is {@link LogoutRequestStatus#NOT_ATTEMPTED}.
-     *
-     * @param ticketId the service ticket id.
-     * @param service the service.
-     * @param logoutUrl the logout url
+     * The status of the logout request.
      */
-    public DefaultLogoutRequest(final String ticketId, final WebApplicationService service, final URL logoutUrl) {
-        this.ticketId = ticketId;
-        this.service = service;
-        this.logoutUrl = logoutUrl;
-    }
+    @Builder.Default
+    private LogoutRequestStatus status = LogoutRequestStatus.NOT_ATTEMPTED;
+
 }

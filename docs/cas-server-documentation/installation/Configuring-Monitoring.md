@@ -1,18 +1,18 @@
 ---
 layout: default
 title: CAS - Monitoring
+category: Monitoring & Statistics
 ---
 
 # CAS Monitoring
 
-CAS monitors may be defined to report back the health status of the ticket registry
-and other underlying connections to systems that are in use by CAS.
+CAS monitors may be defined to report back the health status of the ticket registry and other underlying connections to systems that are in use by CAS. Spring Boot offers a number of monitors known as `HealthIndicator`s that are activated given the presence of specific settings (i.e. `spring.mail.*`). CAS itself providers a number of other monitors based on the same component that are listed below, whose action may require a combination of a particular dependency module and its relevant settings.
 
 ## Default
 
 The default monitors report back brief memory and ticket stats. There is nothing more for you to do.
-To see the relevant list of CAS properties, please [review this guide](Configuration-Properties.html#monitoring)
-and [this guide](Configuration-Properties.html#memory).
+To see the relevant list of CAS properties, please [review this guide](../configuration/Configuration-Properties.html#monitoring)
+and [this guide](../configuration/Configuration-Properties.html#memory).
 
 <div class="alert alert-warning"><strong>YMMV</strong><p>In order to accurately and reliably report on ticket statistics, you are at the mercy of the underlying ticket registry to support the behavior in a performant manner which means that the infrastructure and network capabilities and latencies must be considered and carefully tuned. This might have become specially relevant in clustered deployments as depending on the ticket registry of choice, CAS may need to <i>interrogate</i> the entire cluster by running distributed queries to calculate ticket usage.</p></div>
 
@@ -26,7 +26,7 @@ and [this guide](Configuration-Properties.html#memory).
 </dependency>
 ```
 
-To see the relevant list of CAS properties, please [review this guide](Configuration-Properties.html#memcached-monitors).
+To see the relevant list of CAS properties, please [review this guide](../configuration/Configuration-Properties.html#memcached-monitors).
 
 The actual memcached implementation may be supported via one of the following options, expected to be defined in the overlay.
 
@@ -70,7 +70,7 @@ Support is enabled by including the following dependency in the WAR overlay:
 </dependency>
 ```
 
-To see the relevant list of CAS properties, please [review this guide](Configuration-Properties.html#cache-monitors).
+To see the relevant list of CAS properties, please [review this guide](../configuration/Configuration-Properties.html#cache-monitors).
 
 ## MongoDb
 
@@ -82,7 +82,7 @@ To see the relevant list of CAS properties, please [review this guide](Configura
 </dependency>
 ```
 
-To see the relevant list of CAS properties, please [review this guide](Configuration-Properties.html#mongodb-monitors).
+To see the relevant list of CAS properties, please [review this guide](../configuration/Configuration-Properties.html#mongodb-monitors).
 
 
 
@@ -96,7 +96,7 @@ To see the relevant list of CAS properties, please [review this guide](Configura
 </dependency>
 ```
 
-To see the relevant list of CAS properties, please [review this guide](Configuration-Properties.html#cache-monitors).
+To see the relevant list of CAS properties, please [review this guide](../configuration/Configuration-Properties.html#cache-monitors).
 
 ## JDBC
 
@@ -108,7 +108,7 @@ To see the relevant list of CAS properties, please [review this guide](Configura
 </dependency>
 ```
 
-To see the relevant list of CAS properties, please [review this guide](Configuration-Properties.html#database-monitoring).
+To see the relevant list of CAS properties, please [review this guide](../configuration/Configuration-Properties.html#database-monitoring).
 
 ## LDAP
 
@@ -120,4 +120,4 @@ To see the relevant list of CAS properties, please [review this guide](Configura
 </dependency>
 ```
 
-To see the relevant list of CAS properties, please [review this guide](Configuration-Properties.html#ldap-connection-pool).
+To see the relevant list of CAS properties, please [review this guide](../configuration/Configuration-Properties.html#ldap-connection-pool).

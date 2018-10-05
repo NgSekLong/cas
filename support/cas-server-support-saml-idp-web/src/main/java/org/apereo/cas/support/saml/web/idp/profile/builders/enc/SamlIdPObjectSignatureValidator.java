@@ -1,10 +1,10 @@
 package org.apereo.cas.support.saml.web.idp.profile.builders.enc;
 
-import lombok.extern.slf4j.Slf4j;
-import net.shibboleth.utilities.java.support.resolver.CriteriaSet;
 import org.apereo.cas.configuration.CasConfigurationProperties;
-import org.apereo.cas.configuration.model.support.saml.idp.SamlIdPProperties;
 import org.apereo.cas.support.saml.SamlIdPUtils;
+
+import lombok.val;
+import net.shibboleth.utilities.java.support.resolver.CriteriaSet;
 import org.opensaml.core.criterion.EntityIdCriterion;
 import org.opensaml.messaging.context.MessageContext;
 import org.opensaml.saml.criterion.EntityRoleCriterion;
@@ -21,7 +21,6 @@ import java.util.List;
  * @author Misagh Moayyed
  * @since 5.1.0
  */
-@Slf4j
 public class SamlIdPObjectSignatureValidator extends SamlObjectSignatureValidator {
     private final MetadataResolver casSamlIdPMetadataResolver;
 
@@ -32,7 +31,7 @@ public class SamlIdPObjectSignatureValidator extends SamlObjectSignatureValidato
                                            final MetadataResolver casSamlIdPMetadataResolver,
                                            final CasConfigurationProperties casProperties) {
         super(overrideSignatureReferenceDigestMethods, overrideSignatureAlgorithms,
-                overrideBlackListedSignatureAlgorithms, overrideWhiteListedAlgorithms, casProperties);
+            overrideBlackListedSignatureAlgorithms, overrideWhiteListedAlgorithms, casProperties);
         this.casSamlIdPMetadataResolver = casSamlIdPMetadataResolver;
     }
 
@@ -40,7 +39,7 @@ public class SamlIdPObjectSignatureValidator extends SamlObjectSignatureValidato
     protected RoleDescriptorResolver getRoleDescriptorResolver(final MetadataResolver resolver, final MessageContext context,
                                                                final RequestAbstractType profileRequest) throws Exception {
 
-        final SamlIdPProperties idp = casProperties.getAuthn().getSamlIdp();
+        val idp = casProperties.getAuthn().getSamlIdp();
         return SamlIdPUtils.getRoleDescriptorResolver(casSamlIdPMetadataResolver, idp.getMetadata().isRequireValidMetadata());
     }
 

@@ -1,32 +1,30 @@
 package org.apereo.cas.syncope.authentication;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.syncope.common.lib.to.MembershipTO;
-import org.apache.syncope.common.lib.to.RelationshipTO;
-import org.apache.syncope.common.lib.to.UserTO;
 import org.apereo.cas.authentication.AuthenticationHandlerExecutionResult;
-import org.apereo.cas.authentication.UsernamePasswordCredential;
+import org.apereo.cas.authentication.credential.UsernamePasswordCredential;
 import org.apereo.cas.authentication.exceptions.AccountDisabledException;
 import org.apereo.cas.authentication.exceptions.AccountPasswordMustChangeException;
 import org.apereo.cas.authentication.handler.support.AbstractUsernamePasswordAuthenticationHandler;
-import org.apereo.cas.authentication.principal.Principal;
 import org.apereo.cas.authentication.principal.PrincipalFactory;
 import org.apereo.cas.services.ServicesManager;
 import org.apereo.cas.util.CollectionUtils;
 import org.apereo.cas.util.HttpUtils;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpStatus;
+import org.apache.syncope.common.lib.to.MembershipTO;
+import org.apache.syncope.common.lib.to.RelationshipTO;
+import org.apache.syncope.common.lib.to.UserTO;
+
 import javax.security.auth.login.FailedLoginException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -53,23 +51,23 @@ public class SyncopeAuthenticationHandler extends AbstractUsernamePasswordAuthen
     @SneakyThrows
     protected AuthenticationHandlerExecutionResult authenticateUsernamePasswordInternal(final UsernamePasswordCredential c,
                                                                                         final String originalPassword) {
-        final String syncopeUrl = StringUtils.appendIfMissing(this.syncopeUrl, "/rest/users/self");
-        final HttpResponse response = HttpUtils.executeGet(syncopeUrl, c.getUsername(), c.getPassword(),
+        val syncopeRestUrl = StringUtils.appendIfMissing(this.syncopeUrl, "/rest/users/self");
+        val response = HttpUtils.executeGet(syncopeRestUrl, c.getUsername(), c.getPassword(),
             new HashMap<>(), CollectionUtils.wrap("X-Syncope-Domain", this.syncopeDomain));
 
         LOGGER.debug("Received http response status as [{}]", response.getStatusLine());
 
-        if (response != null && response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
-            final String result = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8);
+        if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
+            val result = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8);
             LOGGER.debug("Received user object as [{}]", result);
-            final UserTO user = this.objectMapper.readValue(result, UserTO.class);
+            val user = this.objectMapper.readValue(result, UserTO.class);
             if (user.isSuspended()) {
                 throw new AccountDisabledException("Could not authenticate forbidden account for " + c.getUsername());
             }
             if (user.isMustChangePassword()) {
                 throw new AccountPasswordMustChangeException("Account password must change for " + c.getUsername());
             }
-            final Principal principal = this.principalFactory.createPrincipal(user.getUsername(), buildSyncopeUserAttributes(user));
+            val principal = this.principalFactory.createPrincipal(user.getUsername(), buildSyncopeUserAttributes(user));
             return createHandlerResult(c, principal, new ArrayList<>());
         }
 
@@ -77,7 +75,7 @@ public class SyncopeAuthenticationHandler extends AbstractUsernamePasswordAuthen
     }
 
     private Map<String, Object> buildSyncopeUserAttributes(final UserTO user) {
-        final Map<String, Object> attributes = new LinkedHashMap<>();
+        val attributes = new HashMap<String, Object>();
 
         if (user.getRoles() != null) {
             attributes.put("syncopeUserRoles", user.getRoles());
@@ -95,11 +93,11 @@ public class SyncopeAuthenticationHandler extends AbstractUsernamePasswordAuthen
         if (user.getCreationDate() != null) {
             attributes.put("syncopeUserCreationDate", user.getCreationDate().toString());
         }
-        final Date changePwdDate = user.getChangePwdDate();
+        val changePwdDate = user.getChangePwdDate();
         if (changePwdDate != null) {
             attributes.put("syncopeUserChangePwdDate", changePwdDate.toString());
         }
-        final Date lastLoginDate = user.getLastLoginDate();
+        val lastLoginDate = user.getLastLoginDate();
         if (lastLoginDate != null) {
             attributes.put("syncopeUserLastLoginDate", lastLoginDate);
         }
@@ -129,7 +127,6 @@ public class SyncopeAuthenticationHandler extends AbstractUsernamePasswordAuthen
         }
 
         user.getPlainAttrs()
-            .stream()
             .forEach(a -> attributes.put("syncopeUserAttr" + a.getSchema(), a.getValues()));
         return attributes;
     }

@@ -1,7 +1,7 @@
 package org.apereo.cas.config;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apereo.cas.CentralAuthenticationService;
+import org.apereo.cas.audit.AuditTrailConstants;
 import org.apereo.cas.audit.AuditTrailRecordResolutionPlan;
 import org.apereo.cas.audit.AuditTrailRecordResolutionPlanConfigurer;
 import org.apereo.cas.authentication.AuthenticationSystemSupport;
@@ -26,9 +26,12 @@ import org.apereo.cas.support.rest.resources.ServiceTicketResource;
 import org.apereo.cas.support.rest.resources.TicketGrantingTicketResource;
 import org.apereo.cas.support.rest.resources.TicketStatusResource;
 import org.apereo.cas.support.rest.resources.UserAuthenticationResource;
+import org.apereo.cas.throttle.AuthenticationThrottlingExecutionPlan;
 import org.apereo.cas.ticket.registry.TicketRegistrySupport;
 import org.apereo.cas.web.support.ArgumentExtractor;
-import org.apereo.cas.web.support.AuthenticationThrottlingExecutionPlan;
+
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apereo.inspektr.audit.spi.support.DefaultAuditActionResolver;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +41,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.List;
 
@@ -56,36 +59,37 @@ public class CasRestConfiguration implements RestHttpRequestCredentialFactoryCon
 
     @Autowired
     @Qualifier("centralAuthenticationService")
-    private CentralAuthenticationService centralAuthenticationService;
+    private ObjectProvider<CentralAuthenticationService> centralAuthenticationService;
 
-    @Autowired(required = false)
+    @Autowired
     @Qualifier("defaultAuthenticationSystemSupport")
-    private AuthenticationSystemSupport authenticationSystemSupport;
+    private ObjectProvider<AuthenticationSystemSupport> authenticationSystemSupport;
 
     @Autowired
     @Qualifier("webApplicationServiceFactory")
-    private ServiceFactory webApplicationServiceFactory;
+    private ObjectProvider<ServiceFactory> webApplicationServiceFactory;
 
     @Autowired
     @Qualifier("defaultTicketRegistrySupport")
-    private TicketRegistrySupport ticketRegistrySupport;
-
+    private ObjectProvider<TicketRegistrySupport> ticketRegistrySupport;
 
     @Autowired
     @Qualifier("argumentExtractor")
-    private ArgumentExtractor argumentExtractor;
+    private ObjectProvider<ArgumentExtractor> argumentExtractor;
 
     @Bean
     public TicketStatusResource ticketStatusResource() {
-        return new TicketStatusResource(centralAuthenticationService);
+        return new TicketStatusResource(centralAuthenticationService.getIfAvailable());
     }
 
     @Bean
     @Autowired
     public ServiceTicketResource serviceTicketResource(
         @Qualifier("serviceTicketResourceEntityResponseFactory") final ServiceTicketResourceEntityResponseFactory serviceTicketResourceEntityResponseFactory) {
-        return new ServiceTicketResource(authenticationSystemSupport, ticketRegistrySupport,
-            argumentExtractor, serviceTicketResourceEntityResponseFactory);
+        return new ServiceTicketResource(authenticationSystemSupport.getIfAvailable(),
+            ticketRegistrySupport.getIfAvailable(),
+            argumentExtractor.getIfAvailable(),
+            serviceTicketResourceEntityResponseFactory);
     }
 
     @Bean
@@ -93,7 +97,7 @@ public class CasRestConfiguration implements RestHttpRequestCredentialFactoryCon
     @Autowired
     public ServiceTicketResourceEntityResponseFactory serviceTicketResourceEntityResponseFactory(
         final List<ServiceTicketResourceEntityResponseFactoryConfigurer> configurers) {
-        final DefaultServiceTicketResourceEntityResponseFactoryPlan plan = new DefaultServiceTicketResourceEntityResponseFactoryPlan();
+        val plan = new DefaultServiceTicketResourceEntityResponseFactoryPlan();
         configurers.forEach(c -> c.configureEntityResponseFactory(plan));
         return new CompositeServiceTicketResourceEntityResponseFactory(plan.getFactories());
     }
@@ -114,23 +118,32 @@ public class CasRestConfiguration implements RestHttpRequestCredentialFactoryCon
     @Bean
     public TicketGrantingTicketResource ticketResourceRestController(
         @Qualifier("restHttpRequestCredentialFactory") final RestHttpRequestCredentialFactory restHttpRequestCredentialFactory) {
-        return new TicketGrantingTicketResource(authenticationSystemSupport, restHttpRequestCredentialFactory,
-            centralAuthenticationService, webApplicationServiceFactory, ticketGrantingTicketResourceEntityResponseFactory());
+        return new TicketGrantingTicketResource(authenticationSystemSupport.getIfAvailable(),
+            restHttpRequestCredentialFactory,
+            centralAuthenticationService.getIfAvailable(),
+            webApplicationServiceFactory.getIfAvailable(),
+            ticketGrantingTicketResourceEntityResponseFactory());
     }
 
     @Autowired
     @Bean
     public UserAuthenticationResource userAuthenticationRestController(
         @Qualifier("restHttpRequestCredentialFactory") final RestHttpRequestCredentialFactory restHttpRequestCredentialFactory) {
-        return new UserAuthenticationResource(authenticationSystemSupport, restHttpRequestCredentialFactory,
-            webApplicationServiceFactory, userAuthenticationResourceEntityResponseFactory());
+        return new UserAuthenticationResource(authenticationSystemSupport.getIfAvailable(),
+            restHttpRequestCredentialFactory,
+            webApplicationServiceFactory.getIfAvailable(),
+            userAuthenticationResourceEntityResponseFactory());
     }
 
     @Autowired
     @Bean
     public RestHttpRequestCredentialFactory restHttpRequestCredentialFactory(final List<RestHttpRequestCredentialFactoryConfigurer> configurers) {
-        final ChainingRestHttpRequestCredentialFactory factory = new ChainingRestHttpRequestCredentialFactory();
-        configurers.forEach(c -> c.configureCredentialFactory(factory));
+        LOGGER.debug("building chainingRestHttpRequestCredentialFactory from {}", configurers);
+        val factory = new ChainingRestHttpRequestCredentialFactory();
+        configurers.forEach(c -> {
+            LOGGER.debug("Configuring credential factory: {}", c);
+            c.configureCredentialFactory(factory);
+        });
         return factory;
     }
 
@@ -141,18 +154,18 @@ public class CasRestConfiguration implements RestHttpRequestCredentialFactoryCon
 
     @Override
     public void configureEntityResponseFactory(final ServiceTicketResourceEntityResponseFactoryPlan plan) {
-        plan.registerFactory(new CasProtocolServiceTicketResourceEntityResponseFactory(this.centralAuthenticationService));
+        plan.registerFactory(new CasProtocolServiceTicketResourceEntityResponseFactory(this.centralAuthenticationService.getIfAvailable()));
     }
 
     @Override
     public void configureAuditTrailRecordResolutionPlan(final AuditTrailRecordResolutionPlan plan) {
         plan.registerAuditActionResolver("REST_API_TICKET_GRANTING_TICKET_ACTION_RESOLVER",
-            new DefaultAuditActionResolver("_CREATED", "_FAILED"));
+            new DefaultAuditActionResolver(AuditTrailConstants.AUDIT_ACTION_POSTFIX_CREATED, AuditTrailConstants.AUDIT_ACTION_POSTFIX_FAILED));
         plan.registerAuditResourceResolver("REST_API_TICKET_GRANTING_TICKET_RESOURCE_RESOLVER",
             new RestResponseEntityAuditResourceResolver(false));
 
         plan.registerAuditActionResolver("REST_API_SERVICE_TICKET_ACTION_RESOLVER",
-            new DefaultAuditActionResolver("_CREATED", "_FAILED"));
+            new DefaultAuditActionResolver(AuditTrailConstants.AUDIT_ACTION_POSTFIX_CREATED, AuditTrailConstants.AUDIT_ACTION_POSTFIX_FAILED));
         plan.registerAuditResourceResolver("REST_API_SERVICE_TICKET_RESOURCE_RESOLVER",
             new RestResponseEntityAuditResourceResolver(true));
     }
@@ -166,7 +179,7 @@ public class CasRestConfiguration implements RestHttpRequestCredentialFactoryCon
     @Configuration("casRestThrottlingConfiguration")
     @ConditionalOnMissingBean(name = "restAuthenticationThrottle")
     @Slf4j
-    public static class CasRestThrottlingConfiguration extends WebMvcConfigurerAdapter {
+    public static class CasRestThrottlingConfiguration implements WebMvcConfigurer {
 
         @Autowired
         @Qualifier("authenticationThrottlingExecutionPlan")
@@ -174,11 +187,9 @@ public class CasRestConfiguration implements RestHttpRequestCredentialFactoryCon
 
         @Override
         public void addInterceptors(final InterceptorRegistry registry) {
-            final AuthenticationThrottlingExecutionPlan plan = authenticationThrottlingExecutionPlan.getIfAvailable();
+            val plan = authenticationThrottlingExecutionPlan.getIfAvailable();
             LOGGER.debug("Activating authentication throttling for REST endpoints...");
-            plan.getAuthenticationThrottleInterceptors().forEach(handler -> {
-                registry.addInterceptor(handler).addPathPatterns("/v1/**");
-            });
+            plan.getAuthenticationThrottleInterceptors().forEach(handler -> registry.addInterceptor(handler).addPathPatterns("/v1/**"));
         }
     }
 }

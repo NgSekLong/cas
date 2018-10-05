@@ -1,6 +1,7 @@
 ---
 layout: default
 title: CAS - Web Flow Extensions
+category: Webflow Management
 ---
 
 # Extending CAS Webflow
@@ -22,7 +23,7 @@ So in truth, what you see above is not necessarily all of what you may get.
 
 ## Modifying Webflow
 
-In modest trivial cases, you may be able to simply [overlay and modify](Maven-Overlay-Installation.html) the core flow configuration files to add or override the desired behavior. Again, think very carefully before introducing those changes into your deployment environment. Avoid making ad-hoc changes to the webflow as much as possible and consider how the change you have in mind might be more suitable as a direct contribution to the CAS project itself so you can just take advantage of its configuration and *NOT* its maintenance.
+In modest trivial cases, you may be able to simply [overlay and modify](WAR-Overlay-Installation.html) the core flow configuration files to add or override the desired behavior. Again, think very carefully before introducing those changes into your deployment environment. Avoid making ad-hoc changes to the webflow as much as possible and consider how the change you have in mind might be more suitable as a direct contribution to the CAS project itself so you can just take advantage of its configuration and *NOT* its maintenance.
 
 To learn how to introduce new actions and state into a Spring Webflow, please [see this guide](http://projects.spring.io/spring-webflow/).
 
@@ -121,7 +122,7 @@ See [this guide](https://docs.spring.io/spring-boot/docs/current/reference/html/
 
 You may configure CAS to alter and auto-configure the webflow via a Groovy script. This is the less elaborate option where you have modest access to CAS APIs that allow you alter the webflow. However, configuration and scaffolding of the overlay and required dependencies is easier as all is provided by CAS at runtime.
 
-To see the relevant list of CAS properties, please [review this guide](Configuration-Properties.html#spring-webflow-groovy-auto-configuration).
+To see the relevant list of CAS properties, please [review this guide](../configuration/Configuration-Properties.html#spring-webflow-groovy-auto-configuration).
 
 <div class="alert alert-warning"><strong>Stop Coding</strong><p>Remember that APIs provided here, specifically executed as part of the Groovy script are considered implementations internal to CAS mostly. They may be added or removed with little hesitation which means changes may break your deployment and upgrades at runtime. Remember that unlike Java classes, scripts are not statically compiled when you build CAS and you only may observe failures when you do in fact turn on the server and deploy. Thus, choose this option with good reason and make sure you have thought changes through before stepping into code.</p></div>
 

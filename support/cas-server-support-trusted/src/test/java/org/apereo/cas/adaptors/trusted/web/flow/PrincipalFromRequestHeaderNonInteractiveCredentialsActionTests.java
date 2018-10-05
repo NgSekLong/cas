@@ -1,8 +1,9 @@
 package org.apereo.cas.adaptors.trusted.web.flow;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apereo.cas.AbstractCentralAuthenticationServiceTests;
 import org.apereo.cas.adaptors.trusted.config.TrustedAuthenticationConfiguration;
+
+import lombok.val;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -26,7 +27,6 @@ import static org.mockito.Mockito.*;
  * @since 5.3.0
  */
 @Import(TrustedAuthenticationConfiguration.class)
-@Slf4j
 public class PrincipalFromRequestHeaderNonInteractiveCredentialsActionTests extends AbstractCentralAuthenticationServiceTests {
     @Autowired
     @Qualifier("principalFromRemoteHeaderPrincipalAction")
@@ -34,11 +34,11 @@ public class PrincipalFromRequestHeaderNonInteractiveCredentialsActionTests exte
 
     @Test
     public void verifyRemoteUserExists() throws Exception {
-        final MockHttpServletRequest request = new MockHttpServletRequest();
-        final MockRequestContext context = new MockRequestContext();
+        val request = new MockHttpServletRequest();
+        val context = new MockRequestContext();
         context.setExternalContext(new ServletExternalContext(new MockServletContext(), request, new MockHttpServletResponse()));
 
-        final Principal principal = mock(Principal.class);
+        val principal = mock(Principal.class);
         when(principal.getName()).thenReturn("casuser");
         request.setUserPrincipal(principal);
         assertEquals("success", this.action.execute(context).getId());

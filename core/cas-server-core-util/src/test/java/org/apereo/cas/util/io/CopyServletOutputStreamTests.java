@@ -1,5 +1,6 @@
 package org.apereo.cas.util.io;
 
+import lombok.val;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -16,8 +17,8 @@ import static org.junit.Assert.*;
 public class CopyServletOutputStreamTests {
     @Test
     public void verifyAction() throws Exception {
-        final ByteArrayOutputStream out = new ByteArrayOutputStream();
-        final CopyServletOutputStream s = new CopyServletOutputStream(out);
+        val out = new ByteArrayOutputStream();
+        val s = new CopyServletOutputStream(out);
         s.write("Test".getBytes(StandardCharsets.UTF_8));
         assertNotNull(s.getCopy());
         assertNotNull(s.getStringCopy());

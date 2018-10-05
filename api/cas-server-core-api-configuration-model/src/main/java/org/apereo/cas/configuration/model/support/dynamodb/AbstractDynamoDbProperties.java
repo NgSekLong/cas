@@ -1,8 +1,9 @@
 package org.apereo.cas.configuration.model.support.dynamodb;
 
+import org.apereo.cas.configuration.model.support.aws.BaseAmazonWebServicesProperties;
+
 import lombok.Getter;
 import lombok.Setter;
-import org.apereo.cas.configuration.model.support.aws.BaseAmazonWebServicesProperties;
 
 /**
  * This is {@link AbstractDynamoDbProperties}.
@@ -10,7 +11,6 @@ import org.apereo.cas.configuration.model.support.aws.BaseAmazonWebServicesPrope
  * @author Misagh Moayyed
  * @since 5.1.0
  */
-
 @Getter
 @Setter
 public abstract class AbstractDynamoDbProperties extends BaseAmazonWebServicesProperties {

@@ -1,11 +1,11 @@
 package org.apereo.cas.services;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.apereo.cas.authentication.principal.Service;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
 import java.io.Serializable;
-import java.net.URL;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,26 +18,8 @@ import java.util.Set;
  * @author Scott Battaglia
  * @since 3.1
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY)
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
 public interface RegisteredService extends Serializable, Comparable<RegisteredService> {
-
-    /**
-     * The logout type.
-     */
-    enum LogoutType {
-        /**
-         * For no SLO.
-         */
-        NONE,
-        /**
-         * For back channel SLO.
-         */
-        BACK_CHANNEL,
-        /**
-         * For front channel SLO.
-         */
-        FRONT_CHANNEL
-    }
 
     /**
      * Initial ID value of newly created (but not persisted) registered service.
@@ -72,6 +54,13 @@ public interface RegisteredService extends Serializable, Comparable<RegisteredSe
      * @return the numeric identifier for this service.
      */
     long getId();
+
+    /**
+     * Sets the identifier for this service. Use {@link #INITIAL_IDENTIFIER_VALUE} to indicate a branch new service definition.
+     *
+     * @param id the numeric identifier for the service.
+     */
+    void setId(long id);
 
     /**
      * Returns the name of the service.
@@ -120,12 +109,6 @@ public interface RegisteredService extends Serializable, Comparable<RegisteredSe
      */
     void setEvaluationOrder(int evaluationOrder);
 
-    /**
-     * Sets the identifier for this service. Use {@link #INITIAL_IDENTIFIER_VALUE} to indicate a branch new service definition.
-     * @param id the numeric identifier for the service.
-     */
-    void setId(long id);
-    
     /**
      * Get the name of the attribute this service prefers to consume as username.
      *
@@ -225,7 +208,7 @@ public interface RegisteredService extends Serializable, Comparable<RegisteredSe
      * @return the logout url for this service
      * @since 4.1
      */
-    URL getLogoutUrl();
+    String getLogoutUrl();
 
     /**
      * Gets the public key associated with this service
@@ -270,5 +253,30 @@ public interface RegisteredService extends Serializable, Comparable<RegisteredSe
     @JsonIgnore
     default String getFriendlyName() {
         return this.getClass().getSimpleName();
+    }
+
+    /**
+     * Initialize the registered service instance by defaulting fields to specific
+     * values or object instances, etc.
+     */
+    default void initialize() {
+    }
+
+    /**
+     * The logout type.
+     */
+    enum LogoutType {
+        /**
+         * For no SLO.
+         */
+        NONE,
+        /**
+         * For back channel SLO.
+         */
+        BACK_CHANNEL,
+        /**
+         * For front channel SLO.
+         */
+        FRONT_CHANNEL
     }
 }

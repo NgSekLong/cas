@@ -1,6 +1,7 @@
 ---
 layout: default
 title: CAS - Configuring Multifactor Authentication Custom Triggers
+category: Multifactor Authentication
 ---
 
 # Multifactor Authentication Custom Triggers
@@ -70,7 +71,7 @@ public class CustomWebflowEventResolver extends AbstractCasWebflowEventResolver 
 
 ## Register Triggers
 
-The event resolver trigger then needs to be registered. [See this guide](Configuration-Management-Extensions.html) for better details.
+The event resolver trigger then needs to be registered. [See this guide](../configuration/Configuration-Management-Extensions.html) for better details.
 
 The below example demonstrates a reasonable outline of a custom event resolver:
 
@@ -79,7 +80,7 @@ package org.apereo.cas.custom.config;
 
 @Configuration("SomethingConfiguration")
 @EnableConfigurationProperties(CasConfigurationProperties.class)
-public class SomethingConfiguration {
+public class SomethingConfiguration implements InitializingBean {
 
     @Autowired
     @Qualifier("initialAuthenticationAttemptWebflowEventResolver")
@@ -90,11 +91,11 @@ public class SomethingConfiguration {
         return new CustomWebflowEventResolver();
     }
 
-    @PostConstruct
-    public void initialize() {
+    @Override
+    public void afterPropertiesSet() {
         initialEventResolver.addDelegate(customWebflowEventResolver());
     }
 }
 ```
 
-Do not forget to register the configuration class with CAS. [See this guide](Configuration-Management-Extensions.html) for better details.
+Do not forget to register the configuration class with CAS. [See this guide](../configuration/Configuration-Management-Extensions.html) for better details.

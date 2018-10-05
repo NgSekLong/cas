@@ -1,6 +1,5 @@
 package org.apereo.cas;
 
-import lombok.extern.slf4j.Slf4j;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -18,8 +17,9 @@ import org.junit.runners.Suite;
     DefaultCasAttributeEncoderTests.class,
     AdaptiveMultifactorAuthenticationPolicyEventResolverTests.class,
     DefaultPrincipalAttributesRepositoryTests.class,
+    GroovyScriptMultifactorAuthenticationPolicyEventResolverTests.class,
+    TimedMultifactorAuthenticationPolicyEventResolverTests.class,
     MultifactorAuthenticationTests.class
 })
-@Slf4j
 public class AllCoreTestsSuite {
 }

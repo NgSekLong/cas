@@ -10,6 +10,8 @@ import org.apereo.cas.services.MultifactorAuthenticationProviderSelector;
 import org.apereo.cas.services.ServicesManager;
 import org.apereo.cas.ticket.registry.TicketRegistrySupport;
 import org.apereo.cas.web.flow.resolver.impl.mfa.PrincipalAttributeMultifactorAuthenticationPolicyEventResolver;
+
+import lombok.val;
 import org.springframework.web.util.CookieGenerator;
 
 import java.util.Map;
@@ -36,8 +38,8 @@ public class SurrogateMultifactorAuthenticationPolicyEventResolver extends Princ
     @Override
     protected Map<String, Object> getPrincipalAttributesForMultifactorAuthentication(final Principal principal) {
         if (SurrogatePrincipal.class.isInstance(principal)) {
-            final SurrogatePrincipal c = SurrogatePrincipal.class.cast(principal);
-            final Map<String, Object> attributes = c.getPrimary().getAttributes();
+            val c = SurrogatePrincipal.class.cast(principal);
+            val attributes = c.getPrimary().getAttributes();
             attributes.putAll(c.getSurrogate().getAttributes());
             return attributes;
         }

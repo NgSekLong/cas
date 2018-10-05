@@ -1,8 +1,9 @@
 package org.apereo.cas.util.spring;
 
-import lombok.extern.slf4j.Slf4j;
+import org.apereo.cas.configuration.CasConfigurationProperties;
+
+import lombok.val;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
-import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -15,7 +16,6 @@ import org.springframework.core.io.ResourceLoader;
  * holds the application context
  * @since 3.0.0.
  */
-@Slf4j
 public class ApplicationContextProvider implements ApplicationContextAware, ResourceLoaderAware {
 
     private static ApplicationContext CONTEXT;
@@ -24,6 +24,20 @@ public class ApplicationContextProvider implements ApplicationContextAware, Reso
 
     public static ApplicationContext getApplicationContext() {
         return CONTEXT;
+    }
+
+    /**
+     * Hold application context statically.
+     *
+     * @param ctx the ctx
+     */
+    public static void holdApplicationContext(final ApplicationContext ctx) {
+        CONTEXT = ctx;
+    }
+
+    @Override
+    public void setApplicationContext(final ApplicationContext ctx) {
+        CONTEXT = ctx;
     }
 
     /**
@@ -37,21 +51,12 @@ public class ApplicationContextProvider implements ApplicationContextAware, Reso
      */
     public static <T> T registerBeanIntoApplicationContext(final ConfigurableApplicationContext applicationContext,
                                                            final Class<T> beanClazz, final String beanId) {
-        final ConfigurableListableBeanFactory beanFactory = applicationContext.getBeanFactory();
-        final T provider = beanFactory.createBean(beanClazz);
+        val beanFactory = applicationContext.getBeanFactory();
+        val provider = beanFactory.createBean(beanClazz);
         beanFactory.initializeBean(provider, beanId);
         beanFactory.autowireBean(provider);
         beanFactory.registerSingleton(beanId, provider);
         return provider;
-    }
-
-    @Override
-    public void setApplicationContext(final ApplicationContext ctx) {
-        CONTEXT = ctx;
-    }
-
-    public ConfigurableApplicationContext getConfigurableApplicationContext() {
-        return (ConfigurableApplicationContext) CONTEXT;
     }
 
     /**
@@ -63,9 +68,23 @@ public class ApplicationContextProvider implements ApplicationContextAware, Reso
         return RESOURCE_LOADER;
     }
 
+
+    /**
+     * Gets cas properties.
+     *
+     * @return the cas properties
+     */
+    public static CasConfigurationProperties getCasProperties() {
+        return getApplicationContext().getBean(CasConfigurationProperties.class);
+    }
+
     @Override
     public void setResourceLoader(final org.springframework.core.io.ResourceLoader resourceLoader) {
         RESOURCE_LOADER = resourceLoader;
+    }
+
+    public ConfigurableApplicationContext getConfigurableApplicationContext() {
+        return (ConfigurableApplicationContext) CONTEXT;
     }
 
     public AutowireCapableBeanFactory getAutowireCapableBeanFactory() {

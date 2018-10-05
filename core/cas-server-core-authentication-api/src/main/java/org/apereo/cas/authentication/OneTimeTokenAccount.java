@@ -8,7 +8,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.ToString;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.builder.CompareToBuilder;
 
 import javax.persistence.CollectionTable;
@@ -35,8 +34,7 @@ import java.util.List;
  */
 @Entity
 @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY)
-@Slf4j
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
 @ToString
 @Getter
 @Setter
@@ -81,7 +79,8 @@ public class OneTimeTokenAccount implements Serializable, Comparable<OneTimeToke
      */
     @JsonCreator
     public OneTimeTokenAccount(@JsonProperty("username") final String username,
-                               @JsonProperty("secretKey") final String secretKey, @JsonProperty("validationCode") final int validationCode,
+                               @JsonProperty("secretKey") final String secretKey,
+                               @JsonProperty("validationCode") final int validationCode,
                                @JsonProperty("scratchCodes") final List<Integer> scratchCodes) {
         this();
         this.secretKey = secretKey;
@@ -92,8 +91,11 @@ public class OneTimeTokenAccount implements Serializable, Comparable<OneTimeToke
 
     @Override
     public int compareTo(final OneTimeTokenAccount o) {
-        return new CompareToBuilder().append(this.scratchCodes, o.getScratchCodes()).append(this.validationCode, o.getValidationCode())
-            .append(this.secretKey, o.getSecretKey()).append(this.username, o.getUsername()).build();
+        return new CompareToBuilder()
+            .append(this.scratchCodes.toArray(), o.getScratchCodes().toArray())
+            .append(this.validationCode, o.getValidationCode())
+            .append(this.secretKey, o.getSecretKey())
+            .append(this.username, o.getUsername()).build();
     }
 
     @Override

@@ -1,12 +1,17 @@
 ---
 layout: default
 title: CAS - Authentication Interrupt
+category: Webflow Management
 ---
 
 # Authentication Interrupt
 
 CAS has the ability to pause and interrupt the authentication flow to reach out to external services and resources, querying for status and settings that 
 would then dictate how CAS should manage and control the SSO session. Interrupt services are able to present notification messages to the user, provide options for redirects to external services, etc. A common use case deals with presenting a *bulletin board* during the authentication flow to present messages and announcements to select users and then optionally require the audience to complete a certain task before CAS is able to honor the authentication request and establish a session.
+
+<div class="alert alert-info"><strong>Interrupt Sequence</strong><p>
+Note that the interrupt operations typically execute after the primary authentication event, meaning an authenticated user has been identified by CAS and by extension is made available to the interrupt.
+</p></div>
 
 In the interrupt flow, CAS is not at the moment reaching back to an external resource acting as an interrupt service to store, track or remember a user's decision. In other words, we are only dealing with the `R` (ie. Read) in `CRUD`. Today's functionality only deals with inquiring status and reading results solely in read-only mode. Interrupt services are themselves required and encouraged to redirect the audience to external resources where execution of an action resets the interrupt status thereby freeing CAS to proceed forward later on without having to interrupt the authentication flow again.  
 
@@ -22,7 +27,7 @@ Support is enabled by including the following dependency in the WAR overlay:
 </dependency>
 ```
 
-To see the relevant list of CAS properties, please [review this guide](Configuration-Properties.html#authentication-interrupt).
+To see the relevant list of CAS properties, please [review this guide](../configuration/Configuration-Properties.html#authentication-interrupt).
 
 ## Interrupt Payload
 
@@ -64,7 +69,7 @@ This option is most useful during development, testing and demos.
 }
 ```
 
-To see the relevant list of CAS properties, please [review this guide](Configuration-Properties.html#authentication-interrupt-json).
+To see the relevant list of CAS properties, please [review this guide](../configuration/Configuration-Properties.html#authentication-interrupt-json).
 
 ### Regex Attribute
 
@@ -72,7 +77,7 @@ This strategy allows one to define regular expression patterns in CAS settings t
 If a successful match is produced while CAS examines the collection of both authentication and principal attributes, the authentication flow
 would be interrupted.
 
-To see the relevant list of CAS properties, please [review this guide](Configuration-Properties.html#authentication-interrupt-regex-attributes).
+To see the relevant list of CAS properties, please [review this guide](../configuration/Configuration-Properties.html#authentication-interrupt-regex-attributes).
 
 ### Groovy
 
@@ -97,7 +102,7 @@ def run(final Object... args) {
 }
 ```
 
-To see the relevant list of CAS properties, please [review this guide](Configuration-Properties.html#authentication-interrupt-groovy).
+To see the relevant list of CAS properties, please [review this guide](../configuration/Configuration-Properties.html#authentication-interrupt-groovy).
 
 The following parameters are passed to the script:
 
@@ -120,7 +125,7 @@ This strategy reaches out to a REST endpoint resource whose job is to dynamicall
 
 On a successful operation with a status code of `200`, the response body is expected to contain the JSON payload whose syntax and structure is identical to what is described above.
 
-To see the relevant list of CAS properties, please [review this guide](Configuration-Properties.html#authentication-interrupt-rest).
+To see the relevant list of CAS properties, please [review this guide](../configuration/Configuration-Properties.html#authentication-interrupt-rest).
 
 ### Custom
 
@@ -141,7 +146,7 @@ public class MyInterruptConfiguration {
 }
 ```
 
-[See this guide](Configuration-Management-Extensions.html) to learn more about how to register configurations into the CAS runtime.
+[See this guide](../configuration/Configuration-Management-Extensions.html) to learn more about how to register configurations into the CAS runtime.
 
 ## Skipping Interrupts
 

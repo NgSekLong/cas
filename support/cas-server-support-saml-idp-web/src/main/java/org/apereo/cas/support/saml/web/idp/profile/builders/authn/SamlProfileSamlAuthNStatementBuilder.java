@@ -1,6 +1,5 @@
 package org.apereo.cas.support.saml.web.idp.profile.builders.authn;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apereo.cas.configuration.CasConfigurationProperties;
 import org.apereo.cas.support.saml.OpenSamlConfigBean;
 import org.apereo.cas.support.saml.SamlException;
@@ -12,6 +11,9 @@ import org.apereo.cas.support.saml.web.idp.profile.builders.SamlProfileObjectBui
 import org.apereo.cas.util.DateTimeUtils;
 import org.apereo.cas.util.InetAddressUtils;
 import org.apereo.cas.util.RandomUtils;
+
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.jasig.cas.client.validation.Assertion;
 import org.opensaml.messaging.context.MessageContext;
 import org.opensaml.saml.saml2.core.AuthnStatement;
@@ -21,7 +23,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.time.ZonedDateTime;
 
 /**
  * This is {@link SamlProfileSamlAuthNStatementBuilder}.
@@ -33,11 +34,9 @@ import java.time.ZonedDateTime;
 public class SamlProfileSamlAuthNStatementBuilder extends AbstractSaml20ObjectBuilder implements SamlProfileObjectBuilder<AuthnStatement> {
 
     private static final long serialVersionUID = 8761566449790497226L;
-
+    private final transient AuthnContextClassRefBuilder authnContextClassRefBuilder;
     @Autowired
     private CasConfigurationProperties casProperties;
-
-    private final transient AuthnContextClassRefBuilder authnContextClassRefBuilder;
 
     public SamlProfileSamlAuthNStatementBuilder(final OpenSamlConfigBean configBean,
                                                 final AuthnContextClassRefBuilder authnContextClassRefBuilder) {
@@ -73,16 +72,16 @@ public class SamlProfileSamlAuthNStatementBuilder extends AbstractSaml20ObjectBu
                                                final SamlRegisteredServiceServiceProviderMetadataFacade adaptor,
                                                final SamlRegisteredService service, final String binding,
                                                final MessageContext messageContext) throws SamlException {
-        final Assertion assertion = Assertion.class.cast(casAssertion);
-        final String authenticationMethod = this.authnContextClassRefBuilder.build(assertion, authnRequest, adaptor, service);
-        final String id = '_' + String.valueOf(Math.abs(RandomUtils.getNativeInstance().nextLong()));
-        final AuthnStatement statement = newAuthnStatement(authenticationMethod, DateTimeUtils.zonedDateTimeOf(assertion.getAuthenticationDate()), id);
+        val assertion = Assertion.class.cast(casAssertion);
+        val authenticationMethod = this.authnContextClassRefBuilder.build(assertion, authnRequest, adaptor, service);
+        val id = '_' + String.valueOf(RandomUtils.getNativeInstance().nextLong());
+        val statement = newAuthnStatement(authenticationMethod, DateTimeUtils.zonedDateTimeOf(assertion.getAuthenticationDate()), id);
         if (assertion.getValidUntilDate() != null) {
-            final ZonedDateTime dt = DateTimeUtils.zonedDateTimeOf(assertion.getValidUntilDate());
+            val dt = DateTimeUtils.zonedDateTimeOf(assertion.getValidUntilDate());
             statement.setSessionNotOnOrAfter(
                 DateTimeUtils.dateTimeOf(dt.plusSeconds(casProperties.getAuthn().getSamlIdp().getResponse().getSkewAllowance())));
         }
-        final SubjectLocality subjectLocality = buildSubjectLocality(assertion, authnRequest, adaptor, binding);
+        val subjectLocality = buildSubjectLocality(assertion, authnRequest, adaptor, binding);
         statement.setSubjectLocality(subjectLocality);
         return statement;
     }
@@ -100,9 +99,9 @@ public class SamlProfileSamlAuthNStatementBuilder extends AbstractSaml20ObjectBu
     protected SubjectLocality buildSubjectLocality(final Object assertion, final RequestAbstractType authnRequest,
                                                    final SamlRegisteredServiceServiceProviderMetadataFacade adaptor,
                                                    final String binding) throws SamlException {
-        final SubjectLocality subjectLocality = newSamlObject(SubjectLocality.class);
-        final String hostAddress = InetAddressUtils.getCasServerHostAddress(casProperties.getServer().getName());
-        final String issuer = SamlIdPUtils.getIssuerFromSamlRequest(authnRequest);
+        val subjectLocality = newSamlObject(SubjectLocality.class);
+        val hostAddress = InetAddressUtils.getCasServerHostAddress(casProperties.getServer().getName());
+        val issuer = SamlIdPUtils.getIssuerFromSamlRequest(authnRequest);
         LOGGER.debug("Built subject locality address [{}] for the saml authentication statement prepped for [{}]", hostAddress, issuer);
         subjectLocality.setAddress(hostAddress);
         return subjectLocality;

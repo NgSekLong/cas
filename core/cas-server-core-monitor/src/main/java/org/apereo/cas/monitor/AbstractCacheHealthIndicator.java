@@ -1,17 +1,15 @@
 package org.apereo.cas.monitor;
 
-import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apereo.cas.configuration.CasConfigurationProperties;
-import org.apereo.cas.configuration.model.core.monitor.MonitorWarningProperties;
+import lombok.val;
 import org.springframework.boot.actuate.health.AbstractHealthIndicator;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.Status;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -21,27 +19,28 @@ import java.util.stream.Collectors;
  * @since 3.5.1
  */
 @Slf4j
-@AllArgsConstructor
+@RequiredArgsConstructor
+@Getter
 public abstract class AbstractCacheHealthIndicator extends AbstractHealthIndicator {
     /**
      * CAS settings.
      */
-    protected final CasConfigurationProperties casProperties;
+    private final long evictionThreshold;
+    private final long threshold;
 
     @Override
     protected void doHealthCheck(final Health.Builder builder) {
-
         try {
-            final CacheStatistics[] statistics = getStatistics();
+            val statistics = getStatistics();
             if (statistics == null || statistics.length == 0) {
                 builder.outOfService().withDetail("message", "Cache statistics are not available.");
                 return;
             }
 
-            final Set<Status> statuses = Arrays.stream(statistics)
+            val statuses = Arrays.stream(statistics)
                 .map(this::status)
                 .collect(Collectors.toSet());
-            
+
             if (statuses.contains(Status.OUT_OF_SERVICE)) {
                 builder.outOfService();
             } else if (statuses.contains(Status.DOWN)) {
@@ -53,7 +52,7 @@ public abstract class AbstractCacheHealthIndicator extends AbstractHealthIndicat
             }
 
             Arrays.stream(statistics).forEach(s -> {
-                final Map<String, Object> map = new HashMap<>();
+                val map = new HashMap<String, Object>();
                 map.put("size", s.getSize());
                 map.put("capacity", s.getCapacity());
                 map.put("evictions", s.getEvictions());
@@ -81,11 +80,10 @@ public abstract class AbstractCacheHealthIndicator extends AbstractHealthIndicat
      * @return WARN or OUT_OF_SERVICE OR UP.
      */
     protected Status status(final CacheStatistics statistics) {
-        final MonitorWarningProperties warn = casProperties.getMonitor().getWarn();
-        if (statistics.getEvictions() > 0 && statistics.getEvictions() > warn.getEvictionThreshold()) {
+        if (statistics.getEvictions() > 0 && statistics.getEvictions() > evictionThreshold) {
             return new Status("WARN");
         }
-        if (statistics.getPercentFree() > 0 && statistics.getPercentFree() < warn.getThreshold()) {
+        if (statistics.getPercentFree() > 0 && statistics.getPercentFree() < threshold) {
             return Status.OUT_OF_SERVICE;
         }
         return Status.UP;

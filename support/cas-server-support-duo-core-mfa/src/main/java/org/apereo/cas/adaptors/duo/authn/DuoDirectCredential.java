@@ -1,13 +1,13 @@
 package org.apereo.cas.adaptors.duo.authn;
 
-import lombok.AllArgsConstructor;
+import org.apereo.cas.authentication.Authentication;
+import org.apereo.cas.authentication.credential.AbstractCredential;
+
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
-import lombok.extern.slf4j.Slf4j;
-import org.apereo.cas.authentication.Authentication;
-import org.apereo.cas.authentication.Credential;
 
 /**
  * This is {@link DuoDirectCredential}.
@@ -15,13 +15,12 @@ import org.apereo.cas.authentication.Credential;
  * @author Misagh Moayyed
  * @since 5.0.0
  */
-@Slf4j
 @ToString
 @Setter
 @Getter
-@AllArgsConstructor
-@EqualsAndHashCode
-public class DuoDirectCredential implements Credential {
+@RequiredArgsConstructor
+@EqualsAndHashCode(callSuper = true)
+public class DuoDirectCredential extends AbstractCredential {
     private static final long serialVersionUID = -7570699733132111037L;
 
     private final Authentication authentication;

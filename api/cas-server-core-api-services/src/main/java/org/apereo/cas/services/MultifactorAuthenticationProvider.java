@@ -2,6 +2,7 @@ package org.apereo.cas.services;
 
 import org.apereo.cas.authentication.Authentication;
 import org.apereo.cas.authentication.AuthenticationException;
+
 import org.springframework.core.Ordered;
 import org.springframework.webflow.execution.Event;
 
@@ -68,5 +69,15 @@ public interface MultifactorAuthenticationProvider extends Serializable, Ordered
                      Authentication authentication,
                      RegisteredService registeredService,
                      HttpServletRequest request);
-
+    
+    /**
+     * This method will inspect global and service properties and determine which
+     * FailureMode applies to the current authentication transaction.
+     *
+     * @param service the service
+     * @return the FailureMode
+     */
+    default RegisteredServiceMultifactorPolicy.FailureModes determineFailureMode(final RegisteredService service) {
+        return RegisteredServiceMultifactorPolicy.FailureModes.NONE;
+    }
 }

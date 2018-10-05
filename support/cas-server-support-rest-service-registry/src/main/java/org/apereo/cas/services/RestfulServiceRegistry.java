@@ -1,16 +1,15 @@
 package org.apereo.cas.services;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -20,7 +19,6 @@ import java.util.stream.Stream;
  * @author Misagh Moayyed
  * @since 5.2.0
  */
-@Slf4j
 @RequiredArgsConstructor
 public class RestfulServiceRegistry extends AbstractServiceRegistry {
     private final transient RestTemplate restTemplate;
@@ -29,7 +27,7 @@ public class RestfulServiceRegistry extends AbstractServiceRegistry {
 
     @Override
     public RegisteredService save(final RegisteredService registeredService) {
-        final ResponseEntity<RegisteredService> responseEntity = restTemplate.exchange(this.url, HttpMethod.POST,
+        val responseEntity = restTemplate.exchange(this.url, HttpMethod.POST,
             new HttpEntity<>(registeredService, this.headers), RegisteredService.class);
         if (responseEntity.getStatusCode().is2xxSuccessful()) {
             return responseEntity.getBody();
@@ -39,17 +37,17 @@ public class RestfulServiceRegistry extends AbstractServiceRegistry {
 
     @Override
     public boolean delete(final RegisteredService registeredService) {
-        final ResponseEntity<Integer> responseEntity = restTemplate.exchange(this.url, HttpMethod.DELETE,
+        val responseEntity = restTemplate.exchange(this.url, HttpMethod.DELETE,
             new HttpEntity<>(registeredService, this.headers), Integer.class);
         return responseEntity.getStatusCode().is2xxSuccessful();
     }
 
     @Override
-    public List<RegisteredService> load() {
-        final ResponseEntity<RegisteredService[]> responseEntity = restTemplate.exchange(this.url, HttpMethod.GET,
+    public Collection<RegisteredService> load() {
+        val responseEntity = restTemplate.exchange(this.url, HttpMethod.GET,
             new HttpEntity<>(this.headers), RegisteredService[].class);
         if (responseEntity.getStatusCode().is2xxSuccessful()) {
-            final RegisteredService[] results = responseEntity.getBody();
+            val results = responseEntity.getBody();
             return Stream.of(results).collect(Collectors.toList());
         }
         return new ArrayList<>(0);
@@ -57,8 +55,8 @@ public class RestfulServiceRegistry extends AbstractServiceRegistry {
 
     @Override
     public RegisteredService findServiceById(final long id) {
-        final String url = StringUtils.appendIfMissing(this.url, "/").concat(String.valueOf(id));
-        final ResponseEntity<RegisteredService> responseEntity = restTemplate.exchange(url, HttpMethod.GET,
+        val completeUrl = StringUtils.appendIfMissing(this.url, "/").concat(String.valueOf(id));
+        val responseEntity = restTemplate.exchange(completeUrl, HttpMethod.GET,
             new HttpEntity<>(id, this.headers), RegisteredService.class);
         if (responseEntity.getStatusCode().is2xxSuccessful()) {
             return responseEntity.getBody();
@@ -68,8 +66,8 @@ public class RestfulServiceRegistry extends AbstractServiceRegistry {
 
     @Override
     public RegisteredService findServiceById(final String id) {
-        final String url = StringUtils.appendIfMissing(this.url, "/").concat(String.valueOf(id));
-        final ResponseEntity<RegisteredService> responseEntity = restTemplate.exchange(url, HttpMethod.GET,
+        val completeUrl = StringUtils.appendIfMissing(this.url, "/").concat(String.valueOf(id));
+        val responseEntity = restTemplate.exchange(completeUrl, HttpMethod.GET,
             new HttpEntity<>(id, this.headers), RegisteredService.class);
         if (responseEntity.getStatusCode().is2xxSuccessful()) {
             return responseEntity.getBody();

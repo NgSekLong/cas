@@ -1,7 +1,5 @@
 package org.apereo.cas.config;
 
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 import org.apereo.cas.audit.AuditPrincipalIdProvider;
 import org.apereo.cas.audit.AuditableExecution;
 import org.apereo.cas.authentication.AuthenticationEventExecutionPlanConfigurer;
@@ -20,13 +18,15 @@ import org.apereo.cas.authentication.surrogate.JsonResourceSurrogateAuthenticati
 import org.apereo.cas.authentication.surrogate.SimpleSurrogateAuthenticationService;
 import org.apereo.cas.authentication.surrogate.SurrogateAuthenticationService;
 import org.apereo.cas.configuration.CasConfigurationProperties;
-import org.apereo.cas.configuration.model.core.authentication.PersonDirectoryPrincipalResolverProperties;
-import org.apereo.cas.configuration.model.support.surrogate.SurrogateAuthenticationProperties;
 import org.apereo.cas.services.ServicesManager;
 import org.apereo.cas.ticket.ExpirationPolicy;
 import org.apereo.cas.ticket.support.HardTimeoutExpirationPolicy;
 import org.apereo.cas.ticket.support.SurrogateSessionExpirationPolicy;
 import org.apereo.cas.util.io.CommunicationsManager;
+
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apereo.services.persondir.IPersonAttributeDao;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,9 +40,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * This is {@link SurrogateAuthenticationConfiguration}.
@@ -65,34 +64,36 @@ public class SurrogateAuthenticationConfiguration {
 
     @Autowired
     @Qualifier("servicesManager")
-    private ServicesManager servicesManager;
+    private ObjectProvider<ServicesManager> servicesManager;
 
     @Autowired
     private CasConfigurationProperties casProperties;
 
     @Autowired
     @Qualifier("communicationsManager")
-    private CommunicationsManager communicationsManager;
+    private ObjectProvider<CommunicationsManager> communicationsManager;
 
     @Autowired
     @Qualifier("registeredServiceAccessStrategyEnforcer")
-    private AuditableExecution registeredServiceAccessStrategyEnforcer;
+    private ObjectProvider<AuditableExecution> registeredServiceAccessStrategyEnforcer;
 
     @Autowired
     @Qualifier("surrogateEligibilityAuditableExecution")
-    private AuditableExecution surrogateEligibilityAuditableExecution;
+    private ObjectProvider<AuditableExecution> surrogateEligibilityAuditableExecution;
 
+    @RefreshScope
     @Bean
     public ExpirationPolicy grantingTicketExpirationPolicy(@Qualifier("ticketGrantingTicketExpirationPolicy") final ExpirationPolicy ticketGrantingTicketExpirationPolicy) {
-        final SurrogateAuthenticationProperties su = casProperties.getAuthn().getSurrogate();
-        final HardTimeoutExpirationPolicy surrogatePolicy = new HardTimeoutExpirationPolicy(su.getTgt().getTimeToKillInSeconds());
-        final SurrogateSessionExpirationPolicy policy = new SurrogateSessionExpirationPolicy(surrogatePolicy);
+        val su = casProperties.getAuthn().getSurrogate();
+        val surrogatePolicy = new HardTimeoutExpirationPolicy(su.getTgt().getTimeToKillInSeconds());
+        val policy = new SurrogateSessionExpirationPolicy(surrogatePolicy);
         policy.addPolicy(SurrogateSessionExpirationPolicy.PolicyTypes.SURROGATE, surrogatePolicy);
         policy.addPolicy(SurrogateSessionExpirationPolicy.PolicyTypes.DEFAULT, ticketGrantingTicketExpirationPolicy);
         return policy;
     }
 
     @ConditionalOnMissingBean(name = "surrogatePrincipalFactory")
+    @RefreshScope
     @Bean
     public PrincipalFactory surrogatePrincipalFactory() {
         return PrincipalFactoryUtils.newPrincipalFactory();
@@ -103,21 +104,21 @@ public class SurrogateAuthenticationConfiguration {
     @Bean
     @SneakyThrows
     public SurrogateAuthenticationService surrogateAuthenticationService() {
-        final SurrogateAuthenticationProperties su = casProperties.getAuthn().getSurrogate();
+        val su = casProperties.getAuthn().getSurrogate();
         if (su.getJson().getLocation() != null) {
             LOGGER.debug("Using JSON resource [{}] to locate surrogate accounts", su.getJson().getLocation());
-            return new JsonResourceSurrogateAuthenticationService(su.getJson().getLocation(), servicesManager);
+            return new JsonResourceSurrogateAuthenticationService(su.getJson().getLocation(), servicesManager.getIfAvailable());
         }
-        final Map<String, List> accounts = new LinkedHashMap<>();
+        val accounts = new HashMap<String, List>();
         su.getSimple().getSurrogates().forEach((k, v) -> accounts.put(k, new ArrayList<>(StringUtils.commaDelimitedListToSet(v))));
         LOGGER.debug("Using accounts [{}] for surrogate authentication", accounts);
-        return new SimpleSurrogateAuthenticationService(accounts, servicesManager);
+        return new SimpleSurrogateAuthenticationService(accounts, servicesManager.getIfAvailable());
     }
 
     @RefreshScope
     @Bean
     public PrincipalResolver personDirectoryPrincipalResolver() {
-        final PersonDirectoryPrincipalResolverProperties principal = casProperties.getAuthn().getSurrogate().getPrincipal();
+        val principal = casProperties.getAuthn().getSurrogate().getPrincipal();
         return new SurrogatePrincipalResolver(attributeRepository.getIfAvailable(),
             surrogatePrincipalFactory(),
             principal.isReturnNull(),
@@ -130,11 +131,10 @@ public class SurrogateAuthenticationConfiguration {
     public AuthenticationPostProcessor surrogateAuthenticationPostProcessor() {
         return new SurrogateAuthenticationPostProcessor(
             surrogateAuthenticationService(),
-            servicesManager,
+            servicesManager.getIfAvailable(),
             eventPublisher,
-            registeredServiceAccessStrategyEnforcer,
-            surrogateEligibilityAuditableExecution,
-            surrogatePrincipalBuilder());
+            registeredServiceAccessStrategyEnforcer.getIfAvailable(),
+            surrogateEligibilityAuditableExecution.getIfAvailable());
     }
 
     @ConditionalOnMissingBean(name = "surrogatePrincipalBuilder")
@@ -147,6 +147,7 @@ public class SurrogateAuthenticationConfiguration {
     public PrincipalElectionStrategy principalElectionStrategy() {
         return new SurrogatePrincipalElectionStrategy();
     }
+
     @Bean
     public AuditPrincipalIdProvider surrogateAuditPrincipalIdProvider() {
         return new SurrogateAuditPrincipalIdProvider();
@@ -161,6 +162,6 @@ public class SurrogateAuthenticationConfiguration {
     @ConditionalOnMissingBean(name = "surrogateAuthenticationEventListener")
     @Bean
     public SurrogateAuthenticationEventListener surrogateAuthenticationEventListener() {
-        return new SurrogateAuthenticationEventListener(communicationsManager, casProperties);
+        return new SurrogateAuthenticationEventListener(communicationsManager.getIfAvailable(), casProperties);
     }
 }

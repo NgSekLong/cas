@@ -1,14 +1,17 @@
 package org.apereo.cas.logging.config;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apereo.cas.configuration.CasConfigurationProperties;
 import org.apereo.cas.logging.web.ThreadContextMDCServletFilter;
+import org.apereo.cas.ticket.registry.TicketRegistry;
 import org.apereo.cas.ticket.registry.TicketRegistrySupport;
 import org.apereo.cas.util.CollectionUtils;
 import org.apereo.cas.web.support.CookieRetrievingCookieGenerator;
+
+import lombok.val;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -16,7 +19,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 
 import java.util.HashMap;
-import java.util.Map;
 
 /**
  * This is {@link CasLoggingConfiguration}.
@@ -26,7 +28,6 @@ import java.util.Map;
  */
 @Configuration("casLoggingConfiguration")
 @EnableConfigurationProperties(CasConfigurationProperties.class)
-@Slf4j
 public class CasLoggingConfiguration {
 
     @Autowired
@@ -35,13 +36,14 @@ public class CasLoggingConfiguration {
 
     @Autowired
     @Qualifier("defaultTicketRegistrySupport")
-    private TicketRegistrySupport ticketRegistrySupport;
-    
+    private ObjectProvider<TicketRegistrySupport> ticketRegistrySupport;
+
+    @ConditionalOnBean(value = TicketRegistry.class)
     @Bean
     public FilterRegistrationBean threadContextMDCServletFilter() {
-        final Map<String, String> initParams = new HashMap<>();
-        final FilterRegistrationBean bean = new FilterRegistrationBean();
-        bean.setFilter(new ThreadContextMDCServletFilter(ticketRegistrySupport, this.ticketGrantingTicketCookieGenerator.getIfAvailable()));
+        val initParams = new HashMap<String, String>();
+        val bean = new FilterRegistrationBean();
+        bean.setFilter(new ThreadContextMDCServletFilter(ticketRegistrySupport.getIfAvailable(), this.ticketGrantingTicketCookieGenerator.getIfAvailable()));
         bean.setUrlPatterns(CollectionUtils.wrap("/*"));
         bean.setInitParameters(initParams);
         bean.setName("threadContextMDCServletFilter");
