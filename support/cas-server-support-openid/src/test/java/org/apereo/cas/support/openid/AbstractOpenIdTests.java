@@ -11,6 +11,7 @@ import org.apereo.cas.config.CasCoreAuthenticationServiceSelectionStrategyConfig
 import org.apereo.cas.config.CasCoreAuthenticationSupportConfiguration;
 import org.apereo.cas.config.CasCoreConfiguration;
 import org.apereo.cas.config.CasCoreHttpConfiguration;
+import org.apereo.cas.config.CasCoreMultifactorAuthenticationConfiguration;
 import org.apereo.cas.config.CasCoreServicesAuthenticationConfiguration;
 import org.apereo.cas.config.CasCoreServicesConfiguration;
 import org.apereo.cas.config.CasCoreTicketCatalogConfiguration;
@@ -33,6 +34,7 @@ import org.apereo.cas.web.config.CasCookieConfiguration;
 import org.apereo.cas.web.config.CasProtocolViewsConfiguration;
 import org.apereo.cas.web.config.CasValidationConfiguration;
 import org.apereo.cas.web.flow.config.CasCoreWebflowConfiguration;
+import org.apereo.cas.web.flow.config.CasMultifactorAuthenticationWebflowConfiguration;
 
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -54,6 +56,7 @@ import org.springframework.test.context.junit4.rules.SpringMethodRule;
 @SpringBootTest(classes = {
     CasCoreServicesConfiguration.class,
     CasRegisteredServicesTestConfiguration.class,
+    CasCoreMultifactorAuthenticationConfiguration.class,
     CasCoreAuthenticationConfiguration.class,
     CasCoreServicesAuthenticationConfiguration.class,
     CasCoreAuthenticationPolicyConfiguration.class,
@@ -67,6 +70,7 @@ import org.springframework.test.context.junit4.rules.SpringMethodRule;
     CasCoreLogoutConfiguration.class,
     CasPersonDirectoryConfiguration.class,
     CasCoreConfiguration.class,
+    CasMultifactorAuthenticationWebflowConfiguration.class,
     CasCoreAuthenticationServiceSelectionStrategyConfiguration.class,
     RefreshAutoConfiguration.class,
     CasCoreWebConfiguration.class,

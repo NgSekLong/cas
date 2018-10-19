@@ -543,20 +543,14 @@ under the configuration key `cas.monitor.endpoints.jdbc`.
 
 ### Enabling Endpoints
 
-Endpoint security configuration controlled and activated by CAS may be controlled via the following settings:
-
-```properties
-# cas.monitor.endpoints.enableEndpointSecurity=true
-```
-
 To determine whether an endpoint is available, the calculation order for all endpoints is as follows:
 
 1. The `enabled` setting of the individual endpoint (i.e. `info`) is consulted in CAS settings, as demonstrated below:
 
 ```properties
-# management.endpoint.info.enabled=true
+# management.endpoint.<endpoint-name>.enabled=true
 ```
-2. If undefined, the global setting noted above is consulted from CAS settings.
+2. If undefined, the global endpoint security is consulted from CAS settings.
 3. If undefined, the default built-in setting for the endpoint in CAS is consulted, which is typically `false` by default.
 
 All available endpoint ids [should be listed here](../installation/Monitoring-Statistics.html).
@@ -580,6 +574,34 @@ The `health` endpoint may also be configured to show details using `management.e
 # management.endpoint.health.show-details=never
 ```
 
+### Endpoint Security
+
+Global endpoint security configuration activated by CAS may be controlled under the configuration key `cas.monitor.endpoints.endpoint.<endpoint-name>`.
+There is a special endpoint named `defaults`  which serves as a shortcut that controls the security of all endpoints, if left undefined in CAS settings. 
+
+Note that any individual endpoint must be first enabled before any security can be applied.
+
+The security of all endpoints is controlled using the following settings:
+
+```properties
+# ${configurationKey}.requiredRoles[0]=
+# ${configurationKey}.requiredAuthorities[0]=
+# ${configurationKey}.requiredIpAddresses[0]=
+# ${configurationKey}.access[0]=PERMIT|ANONYMOUS|DENY|AUTHENTICATED|ROLE|AUTHORITY|IP_ADDRESS
+```
+
+The following access levels are allowed for each individual endpoint:
+
+| Type                    | Description
+|-------------------------|----------------------------------------------------------------------------------------------------
+| `PERMIT`                | Allow open access to the endpoint.
+| `ANONYMOUS`             | Allow anonymous access to the endpoint. 
+| `DENY`                  | Default. Block access to the endpoint.
+| `AUTHENTICATED`         | Require authenticated access to the endpoint.
+| `ROLE`                  | Require authenticated access to the endpoint along with a role requirement.
+| `AUTHORITY`             | Require authenticated access to the endpoint along with an authority requirement.
+| `IP_ADDRESS`            | Require authenticated access to the endpoint using a collection of IP addresses.
+    
 ### Spring Boot Admin Server
 
 To learn more about this topic, [please review this guide](../installation/Configuring-Monitoring-Administration.html).
@@ -623,31 +645,43 @@ To learn more about this topic, [please review this guide](../ux/User-Interface-
 # the cas web application.
 # spring.thymeleaf.prefix=classpath:/templates/
 
-# Ensure CAS protocol v2 can behave like v3 when
-# validating service tickets, etc.
-# cas.view.cas2.v3ForwardCompatible=false
-
-# Indicate where core CAS-protocol related views should be found
-# in the view directory hierarchy.
-# cas.view.cas2.success=protocol/2.0/casServiceValidationSuccess
-# cas.view.cas2.failure=protocol/2.0/casServiceValidationFailure
-# cas.view.cas2.proxy.success=protocol/2.0/casProxySuccessView
-# cas.view.cas2.proxy.failure=protocol/2.0/casProxyFailureView
-
-# cas.view.cas3.success=protocol/3.0/casServiceValidationSuccess
-# cas.view.cas3.failure=protocol/3.0/casServiceValidationFailure
-
-# Indicates how attributes should be rendered in the validation response
-# cas.view.cas3.attributeRendererType=DEFAULT|INLINE
-
-# Defines a default URL to which CAS may redirect if there is no service
-# provided in the authentication request.
+# Defines a default URL to which CAS may redirect if there is no service provided in the authentication request.
 # cas.view.defaultRedirectUrl=https://www.github.com
 
 # CAS views may be located at the following paths outside
 # the web application context, in addition to prefix specified
 # above which is handled via Thymeleaf.
 # cas.view.templatePrefixes[0]=file:///etc/cas/templates
+```
+
+### CAS v1
+
+```properties
+# Indicates how attributes should be rendered in the validation response
+# cas.view.cas1.attributeRendererType=DEFAULT|VALUES_PER_LINE
+```
+
+### CAS v2
+
+```properties
+# Ensure CAS protocol v2 can behave like v3 when validating service tickets, etc.
+# cas.view.cas2.v3ForwardCompatible=false
+
+# Indicate where core CAS-protocol related views should be found in the view directory hierarchy.
+# cas.view.cas2.success=protocol/2.0/casServiceValidationSuccess
+# cas.view.cas2.failure=protocol/2.0/casServiceValidationFailure
+# cas.view.cas2.proxy.success=protocol/2.0/casProxySuccessView
+# cas.view.cas2.proxy.failure=protocol/2.0/casProxyFailureView
+```
+
+### CAS v3
+
+```properties
+# cas.view.cas3.success=protocol/3.0/casServiceValidationSuccess
+# cas.view.cas3.failure=protocol/3.0/casServiceValidationFailure
+
+# Indicates how attributes should be rendered in the validation response
+# cas.view.cas3.attributeRendererType=DEFAULT|INLINE
 ```
 
 ### Restful Views
@@ -738,7 +772,7 @@ Attributes may be allowed to be virtually renamed and remapped. The following de
 
 ### Merging Strategies
 
-The following mergeing strategies can be used to resolve conflicts when the same attribute are found from multiple sources:
+The following merging strategies can be used to resolve conflicts when the same attribute are found from multiple sources:
 
 | Type                    | Description
 |-------------------------|----------------------------------------------------------------------------------------------------
@@ -1900,6 +1934,13 @@ X.509 principal resolution can act on the following principal types:
 | `SUBJECT_DN`            | The default type; Resolve the principal by the certificate's subject dn.
 | `CN_EDIPI`              | Resolve the principal by the Electronic Data Interchange Personal Identifier (EDIPI) from the Common Name.
 
+For the ```CN_EDIPI``` and ```SUBJECT_ALT_NAME``` principal resolvers, since not all certificates have those attributes, 
+you may specify the following property in order to have a different attribute from the certificate used as the principal.  
+If no alternative attribute is specified then the principal will be null and CAS will fail auth or use a different authenticator.
+```properties
+# cas.authn.x509.alternatePrincipalAttribute=subjectDn|sigAlgOid|subjectX500Principal
+```
+
 ### CRL Fetching / Revocation
 
 CAS provides a flexible policy engine for certificate revocation checking. This facility arose due to lack of configurability
@@ -1960,16 +2001,27 @@ To fetch CRLs, the following options are available:
 
 # cas.authn.x509.name=
 # cas.authn.x509.principalDescriptor=
-# cas.authn.x509.principalSNRadix=10
-# cas.authn.x509.principalHexSNZeroPadding=false
 # cas.authn.x509.maxPathLength=1
 # cas.authn.x509.throwOnFetchFailure=false
-# cas.authn.x509.valueDelimiter=,
+
 # cas.authn.x509.checkAll=false
 # cas.authn.x509.requireKeyUsage=false
-# cas.authn.x509.serialNumberPrefix=SERIALNUMBER=
 # cas.authn.x509.refreshIntervalSeconds=3600
 # cas.authn.x509.maxPathLengthAllowUnspecified=false
+
+# SERIAL_NO_DN
+# cas.authn.x509.serialNoDn.serialNumberPrefix=SERIALNUMBER=
+# cas.authn.x509.serialNoDn.valueDelimiter=,
+
+# SERIAL_NO
+# cas.authn.x509.serialNo.principalSNRadix=10
+# cas.authn.x509.serialNo.principalHexSNZeroPadding=false
+
+# SUBJECT_ALT_NAME
+# cas.authn.x509.subjectAltName.alternatePrincipalAttribute=[sigAlgOid|subjectDn|subjectX500Principal]
+
+# CN_EDIPI 
+# cas.authn.x509.cnEdipi.alternatePrincipalAttribute=[sigAlgOid|subjectDn|subjectX500Principal]
 ```
 
 ### X509 Certificate Extraction
@@ -2714,7 +2766,7 @@ The following external identity providers share [common blocks of settings](Conf
 | Foursquare                | `cas.authn.pac4j.foursquare`
 | WindowsLive               | `cas.authn.pac4j.windowsLive`
 | Google                    | `cas.authn.pac4j.google`
-| HiOrg                     | `cas.authn.pac4j.hiOrgServer`
+| HiOrg-Server              | `cas.authn.pac4j.hiOrgServer`
 
 See below for other identity providers such as CAS, SAML2 and more.
 
@@ -2802,7 +2854,8 @@ prefixes for the `keystorePath` or `identityProviderMetadataPath` property).
 # cas.authn.pac4j.saml[0].serviceProviderEntityId=
 # cas.authn.pac4j.saml[0].serviceProviderMetadataPath=
 
-# cas.authn.pac4j.saml[0].maximumAuthenticationLifetime=
+# cas.authn.pac4j.saml[0].maximumAuthenticationLifetime=3600
+# cas.authn.pac4j.saml[0].maximumAuthenticationLifetime=300
 # cas.authn.pac4j.saml[0].destinationBinding=urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect
 
 # Path/URL to delegated IdP metadata
@@ -2825,6 +2878,9 @@ prefixes for the `keystorePath` or `identityProviderMetadataPath` property).
 # cas.authn.pac4j.saml[0].requestedAttributes[0].friendlyName=
 # cas.authn.pac4j.saml[0].requestedAttributes[0].nameFormat=urn:oasis:names:tc:SAML:2.0:attrname-format:uri
 # cas.authn.pac4j.saml[0].requestedAttributes[0].required=false
+
+# cas.authn.pac4j.saml[0].mappedAttributes[0].name=urn:oid:2.5.4.42
+# cas.authn.pac4j.saml[0].mappedAttributes[0].mappedAs=displayName
 ```
 
 Examine the generated metadata after accessing the CAS login screen to ensure all ports and endpoints are correctly adjusted.  Finally, share the CAS SP metadata with the delegated IdP and register CAS as an authorized relying party.
@@ -2836,6 +2892,14 @@ Delegate authentication to Facebook. Common settings for this identity provider 
 ```properties
 # cas.authn.pac4j.facebook.fields=
 # cas.authn.pac4j.facebook.scope=
+```
+
+### HiOrg Server
+
+Delegate authentication to HiOrg Server. Common settings for this identity provider are available [here](Configuration-Properties-Common.html#delegated-authentication-settings) under the configuration key `cas.authn.pac4j.hiOrgServer`.
+
+```properties
+# cas.authn.pac4j.hiOrgServer.scope=eigenedaten
 ```
 
 ### LinkedIn

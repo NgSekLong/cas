@@ -2,7 +2,6 @@ package org.apereo.cas.adaptors.x509.authentication.principal;
 
 import org.apereo.cas.authentication.Credential;
 import org.apereo.cas.authentication.principal.PrincipalFactory;
-import org.apereo.cas.util.CollectionUtils;
 import org.apereo.cas.util.function.FunctionUtils;
 
 import com.google.common.base.Predicates;
@@ -10,7 +9,6 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.commons.lang3.StringUtils;
 import org.apereo.services.persondir.IPersonAttributeDao;
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
@@ -47,8 +45,9 @@ public class X509SubjectAlternativeNameUPNPrincipalResolver extends AbstractX509
 
     public X509SubjectAlternativeNameUPNPrincipalResolver(final IPersonAttributeDao attributeRepository,
                                                           final PrincipalFactory principalFactory, final boolean returnNullIfNoAttributes,
-                                                          final String principalAttributeName) {
-        super(attributeRepository, principalFactory, returnNullIfNoAttributes, principalAttributeName);
+                                                          final String principalAttributeName,
+                                                          final String alternatePrincipalAttribute) {
+        super(attributeRepository, principalFactory, returnNullIfNoAttributes, principalAttributeName, alternatePrincipalAttribute);
     }
 
     /**
@@ -59,25 +58,24 @@ public class X509SubjectAlternativeNameUPNPrincipalResolver extends AbstractX509
      * @return UPN string or null
      */
     private static String getUPNStringFromSequence(final ASN1Sequence seq) {
-        if (seq != null) {
-            // First in sequence is the object identifier, that we must check
-            val id = ASN1ObjectIdentifier.getInstance(seq.getObjectAt(0));
-            if (id != null && UPN_OBJECTID.equals(id.getId())) {
-                val obj = (ASN1TaggedObject) seq.getObjectAt(1);
-                val primitiveObj = obj.getObject();
+        if (seq == null) {
+            return null;
+        }
+        val id = ASN1ObjectIdentifier.getInstance(seq.getObjectAt(0));
+        if (id != null && UPN_OBJECTID.equals(id.getId())) {
+            val obj = (ASN1TaggedObject) seq.getObjectAt(1);
+            val primitiveObj = obj.getObject();
 
-                val func = FunctionUtils.doIf(Predicates.instanceOf(ASN1TaggedObject.class),
-                    () -> ASN1TaggedObject.getInstance(primitiveObj).getObject(),
-                    () -> primitiveObj);
-                val prim = func.apply(primitiveObj);
+            val func = FunctionUtils.doIf(Predicates.instanceOf(ASN1TaggedObject.class),
+                () -> ASN1TaggedObject.getInstance(primitiveObj).getObject(),
+                () -> primitiveObj);
+            val prim = func.apply(primitiveObj);
 
-                if (prim instanceof ASN1OctetString) {
-                    return new String(((ASN1OctetString) prim).getOctets(), StandardCharsets.UTF_8);
-                }
-                if (prim instanceof ASN1String) {
-                    return ((ASN1String) prim).getString();
-                }
-                return null;
+            if (prim instanceof ASN1OctetString) {
+                return new String(((ASN1OctetString) prim).getOctets(), StandardCharsets.UTF_8);
+            }
+            if (prim instanceof ASN1String) {
+                return ((ASN1String) prim).getString();
             }
         }
         return null;
@@ -141,31 +139,18 @@ public class X509SubjectAlternativeNameUPNPrincipalResolver extends AbstractX509
             }
         } catch (final CertificateParsingException e) {
             LOGGER.error("Error is encountered while trying to retrieve subject alternative names collection from certificate", e);
-            return null;
+            return getAlternatePrincipal(certificate);
         }
-        LOGGER.debug("Returning null principal id...");
-        return null;
+
+        return getAlternatePrincipal(certificate);
     }
 
     @Override
     protected Map<String, List<Object>> retrievePersonAttributes(final String principalId, final Credential credential) {
         val attributes = new LinkedHashMap<>(super.retrievePersonAttributes(principalId, credential));
         val certificate = ((X509CertificateCredential) credential).getCertificate();
-
-        if (certificate != null) {
-            if (StringUtils.isNotBlank(certificate.getSigAlgOID())) {
-                attributes.put("sigAlgOid", CollectionUtils.wrapList(certificate.getSigAlgOID()));
-            }
-            val subjectDn = certificate.getSubjectDN();
-            if (subjectDn != null) {
-                attributes.put("subjectDn", CollectionUtils.wrapList(subjectDn.getName()));
-            }
-            val subjectPrincipal = certificate.getSubjectX500Principal();
-            if (subjectPrincipal != null) {
-                attributes.put("subjectX500Principal", CollectionUtils.wrapList(subjectPrincipal.getName()));
-            }
-        }
+        attributes.putAll(extractPersonAttributes(certificate));
         return attributes;
-
     }
+
 }

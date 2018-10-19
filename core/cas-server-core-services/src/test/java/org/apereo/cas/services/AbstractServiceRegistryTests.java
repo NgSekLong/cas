@@ -101,10 +101,8 @@ public abstract class AbstractServiceRegistryTests {
 
     @Test
     public void verifySaveAndLoad() {
-        val list = new ArrayList<RegisteredService>();
         IntStream.range(0, getLoadSize()).forEach(i -> {
             val svc = buildRegisteredServiceInstance(i);
-            list.add(svc);
             this.serviceRegistry.save(svc);
             val svc2 = this.serviceRegistry.findServiceByExactServiceName(svc.getName());
             assertNotNull(svc2);
@@ -457,8 +455,7 @@ public abstract class AbstractServiceRegistryTests {
 
     @Test
     public void serializePublicKeyForServiceAndVerify() {
-        final RegisteredServicePublicKey publicKey = new RegisteredServicePublicKeyImpl(
-            "classpath:RSA1024Public.key", "RSA");
+        val publicKey = new RegisteredServicePublicKeyImpl("classpath:RSA1024Public.key", "RSA");
         val r = buildRegisteredServiceInstance(RandomUtils.nextInt());
         r.setPublicKey(publicKey);
 
